@@ -265,13 +265,13 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
    the plain app byte-for-byte the same, so the fun can never break the money. */
 :root[data-fun="on"]{
   --accent:#7c3aed; --accent2:#0fbf8f;
-  --neon1:#ff2bd6; --neon2:#5b8cff; --neon3:#00e5c0;
-  --viz-in:#7c3aed; --viz-out:#ff2bd6;
+  --neon1:#7b5cff; --neon2:#2f8bff; --neon3:#25d9e8;
+  --viz-in:#7c3aed; --viz-out:#5b6bd6;
   --shadow:0 10px 30px rgba(91,140,255,.20);
 }
 :root[data-fun="on"][data-theme="dark"]{
-  --accent:#a78bfa; --accent2:#3ef2c0;
-  --viz-in:#a78bfa; --viz-out:#ff5fc8;
+  --accent:#a78bfa; --accent2:#4fd8e8;
+  --viz-in:#a78bfa; --viz-out:#7c8dff;
   --shadow:0 10px 34px rgba(0,0,0,.5);
 }
 
@@ -280,9 +280,9 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 :root[data-fun="on"] .aurora{
   display:block;position:fixed;inset:-25%;z-index:0;pointer-events:none;
   background:
-    radial-gradient(34% 26% at 20% 20%, rgba(255,43,214,.40), transparent 70%),
-    radial-gradient(36% 28% at 82% 32%, rgba(91,140,255,.42), transparent 70%),
-    radial-gradient(44% 32% at 50% 86%, rgba(0,229,192,.38), transparent 70%);
+    radial-gradient(34% 26% at 20% 20%, rgba(123,92,255,.44), transparent 70%),
+    radial-gradient(36% 28% at 82% 32%, rgba(47,139,255,.42), transparent 70%),
+    radial-gradient(44% 32% at 50% 86%, rgba(37,217,232,.34), transparent 70%);
   animation:drift 20s ease-in-out infinite alternate
 }
 @keyframes drift{
@@ -322,7 +322,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 :root[data-fun="on"] .src.on{background:linear-gradient(120deg,var(--neon2),var(--accent));border-color:transparent}
 :root[data-fun="on"] .logo .ic-svg{animation:bob 3.4s ease-in-out infinite}
 :root[data-fun="on"] .done-banner{
-  background:linear-gradient(90deg,var(--neon1),var(--neon2),var(--neon3),var(--neon1));
+  background:linear-gradient(90deg,#16a34a,#22c55e,var(--neon3),#22c55e,#16a34a);
   background-size:300% 100%;animation:slidebg 5s linear infinite
 }
 
@@ -399,8 +399,8 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 /* ---------- extreme: cool mode with the brakes off ---------- */
 @property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
 :root[data-x="on"]{
-  --neon4:#ffe14d;
-  --accent2:#00ffc8;
+  --neon4:#9d7bff;
+  --accent2:#3ee0ea;
   --shadow:0 12px 34px rgba(124,58,237,.35)
 }
 #ambient{display:none}
@@ -424,7 +424,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   :root[data-x="on"] .card{position:relative;isolation:isolate}
   :root[data-x="on"] .card::after{
     content:'';position:absolute;inset:-1.5px;border-radius:inherit;padding:1.5px;pointer-events:none;
-    background:conic-gradient(from var(--ang),var(--neon1),var(--neon2),var(--neon3),var(--neon4),var(--neon1));
+    background:conic-gradient(from var(--ang),var(--neon4),var(--neon2),var(--neon3),var(--neon2),var(--neon4));
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
     -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
     mask-composite:exclude;animation:angspin 4.5s linear infinite;opacity:.85
@@ -2391,7 +2391,7 @@ function confetti(scale = 1){
   if(cv.width !== innerWidth || cv.height !== innerHeight){ cv.width = innerWidth; cv.height = innerHeight; }
   const fun = !!db.fun;
   const cols = fun
-    ? ['#ff2bd6','#5b8cff','#00e5c0','#ffd25e','#a78bfa','#ff8a3d']
+    ? ['#7b5cff','#2f8bff','#25d9e8','#a78bfa','#8fd8ff','#5f6dff']
     : ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4'];
   const n = Math.max(12, Math.round((fun ? 170 : 120) * scale));
   const life = (fun ? 4200 : 3200) * Math.max(.5, Math.min(1, scale));
@@ -2400,7 +2400,7 @@ function confetti(scale = 1){
     x:Math.random()*cv.width, y:-20 - Math.random()*cv.height*.5,
     r:4 + Math.random()*(fun ? 9 : 6), vy:2 + Math.random()*4, vx:-1.5 + Math.random()*3,
     c:cols[(Math.random()*cols.length)|0], a:Math.random()*Math.PI,
-    spin:.08 + Math.random()*.16, coin:fun && Math.random() < .45,
+    spin:.08 + Math.random()*.16, coin:fun && Math.random() < .45, gold:'#f0c24b',
     die:now + life * (.7 + Math.random()*.5)
   });
   if(xOn()) for(let i = 0; i < Math.max(1, Math.round(3 * scale)); i++) boom(
@@ -2438,8 +2438,8 @@ function loop(){
       // squashing the circle as it turns reads as a coin tumbling in 3D
       ctx.rotate(p.a * .35);
       ctx.scale(Math.max(.12, Math.abs(Math.cos(p.a))), 1);
-      ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(0, 0, p.r, 0, 7); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.fillStyle = p.gold; ctx.beginPath(); ctx.arc(0, 0, p.r, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,246,207,.8)'; ctx.lineWidth = 1.2; ctx.stroke();
     }else{
       ctx.rotate(p.a);
       ctx.fillStyle = p.c; ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r*.6);

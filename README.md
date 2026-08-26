@@ -18,7 +18,7 @@ your display.
 ### Cool mode 🆒
 
 **Settings → Look and feel** has a switch that makes the whole app show off: a neon
-palette, an aurora drifting behind every screen, glass cards, screens that slide in,
+palette held to one narrow band of hues — violet through azure to cyan — an aurora drifting behind every screen, glass cards, screens that slide in,
 a gold coin spinning in real CSS 3D behind the progress ring — it leans toward your
 finger — and confetti that throws tumbling coins, on every deposit and not just at
 the finish line.
