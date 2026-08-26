@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Stash – Save toward a goal</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f1220'/><g fill='none' stroke='%237c7cff' stroke-width='2.4'><circle cx='16' cy='16' r='9'/><circle cx='16' cy='16' r='4.5'/></g><circle cx='16' cy='16' r='1.6' fill='%233ddc84'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -17,12 +17,14 @@
   --txt:#141828; --muted:#6b7391; --accent:#4f46e5; --accent2:#22c55e;
   --danger:#e11d48; --chip:#f0f2f8; --shadow:0 6px 24px rgba(20,24,40,.07);
   --ring-bg:#e8ebf5; --bar:rgba(255,255,255,.92);
+  --viz-in:#4f46e5; --viz-out:#d03b3b; --viz-axis:#c9cee0;
 }
 :root[data-theme="dark"]{
   --bg:#0f1220; --bg2:#151a2d; --card:#171c30; --line:#252b45;
   --txt:#eef1f8; --muted:#9aa2c0; --accent:#7c7cff; --accent2:#3ddc84;
   --danger:#ff6b8a; --chip:#1e2440; --shadow:0 6px 28px rgba(0,0,0,.35);
   --ring-bg:#242a44; --bar:rgba(21,26,45,.92);
+  --viz-in:#3987e5; --viz-out:#e0607e; --viz-axis:#39405f;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;padding:0;overflow:hidden;overscroll-behavior:none}
@@ -76,11 +78,34 @@ main{flex:1;position:relative;min-height:0}
 }
 .tab{
   border:0;background:transparent;cursor:pointer;color:var(--muted);
-  padding:6px 2px;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:11px;font-weight:700;
+  min-height:62px;padding:10px 2px;border-radius:18px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  font-size:12px;font-weight:700;
 }
-.tab i{font-style:normal;font-size:19px;line-height:1}
+.tab .ic-svg{width:25px;height:25px}
 .tab.on{color:var(--accent);background:var(--chip)}
+
+/* icons */
+.ic-svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+.ic-sm{width:17px;height:17px}
+.logo{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.logo .ic-svg{width:22px;height:22px;color:var(--accent)}
+
+/* days screen */
+.dayhead{flex:none;display:flex;align-items:baseline;justify-content:space-between;padding:8px 4px 6px;gap:8px}
+.dayhead h2{font-size:16px;margin:0;font-weight:800}
+.dayhead span{font-size:12px;color:var(--muted);white-space:nowrap}
+.stats4{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.chartcard{flex:none;padding:12px 12px 8px;margin-bottom:10px}
+.chartlbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;
+  color:var(--muted);font-weight:600;margin-bottom:6px;gap:8px}
+.chartlbl b{font-weight:800;white-space:nowrap}
+#chart{width:100%;height:auto;display:block;touch-action:manipulation}
+.dayrow{display:flex;justify-content:space-between;align-items:baseline;
+  padding:14px 4px 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.dayrow b{font-size:14px;color:var(--accent2)}
+.dayrow b.neg{color:var(--danger)}
 
 /* ===== home ===== */
 .goalname{text-align:center;font-size:15px;color:var(--muted);font-weight:600;flex:none;padding:6px 0 2px}
@@ -95,7 +120,7 @@ main{flex:1;position:relative;min-height:0}
 .pct{font-size:12px;font-weight:800;color:var(--accent2);background:var(--chip);padding:2px 10px;border-radius:999px;margin-top:4px}
 .left{flex:none;text-align:center;font-size:14px;color:var(--muted);padding:2px 0 10px}
 .left b{color:var(--txt);font-weight:800}
-.done-banner{flex:none;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;padding:9px;border-radius:14px;font-weight:700;text-align:center;font-size:14px;margin-bottom:8px}
+.done-banner{flex:none;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;padding:9px;border-radius:14px;font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px}
 .stats{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:9px 12px}
 .stat .k{font-size:11px;color:var(--muted);font-weight:600}
@@ -103,7 +128,7 @@ main{flex:1;position:relative;min-height:0}
 
 /* ===== add ===== */
 .seg{flex:none;display:flex;background:var(--chip);border-radius:14px;padding:4px;margin:6px 0 10px}
-.seg button{flex:1;padding:9px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer}
+.seg button{flex:1;padding:10px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
 .seg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
 .amtbig{flex:none;text-align:center;font-size:clamp(30px,7vh,42px);font-weight:900;letter-spacing:-1px;padding:2px 0 6px;min-height:48px}
 .amtbig.zero{color:var(--muted)}
@@ -121,6 +146,7 @@ main{flex:1;position:relative;min-height:0}
   font-size:21px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)
 }
 .key:active{background:var(--chip);transform:scale(.97)}
+.key .ic-svg{margin:0 auto}
 .btn{
   font-weight:800;font-size:16px;border:0;cursor:pointer;padding:14px 18px;
   border-radius:16px;background:var(--accent);color:#fff;white-space:nowrap
@@ -183,12 +209,28 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-goal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-days" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+  <symbol id="i-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M18.6 14.6a1.5 1.5 0 0 0 .3 1.7l.1.1a1.9 1.9 0 1 1-2.6 2.6l-.1-.1a1.5 1.5 0 0 0-2.6 1v.3a1.9 1.9 0 1 1-3.8 0v-.2a1.5 1.5 0 0 0-2.6-1l-.1.1a1.9 1.9 0 1 1-2.6-2.7l.1-.1a1.5 1.5 0 0 0-1-2.6h-.2a1.9 1.9 0 1 1 0-3.8h.3a1.5 1.5 0 0 0 1-2.6l-.1-.1a1.9 1.9 0 1 1 2.6-2.6l.1.1a1.5 1.5 0 0 0 2.6-1v-.3a1.9 1.9 0 1 1 3.8 0v.2a1.5 1.5 0 0 0 2.6 1l.1-.1a1.9 1.9 0 1 1 2.7 2.7l-.1.1a1.5 1.5 0 0 0 1 2.6h.2a1.9 1.9 0 1 1 0 3.8h-.3a1.5 1.5 0 0 0-1.4.9z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H7a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.6A3.7 3.7 0 0 1 17.5 19z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18.5h2"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4 19h16"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M4 19h16"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6.5 7l.8 12a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1l.8-12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 6H9.4a2 2 0 0 0-1.5.7L3 12l4.9 5.3a2 2 0 0 0 1.5.7H20a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="m12 10 4 4M16 10l-4 4"/></symbol>
+</defs></svg>
 
 <div id="app">
   <div class="topbar">
-    <h1>🎯 Stash</h1>
-    <button class="pill" id="syncPill"><span id="syncTxt">Local only</span></button>
-    <button class="iconbtn" id="themeBtn" title="Light / dark">🌙</button>
+    <h1 class="logo"><svg class="ic-svg" aria-hidden="true"><use href="#i-goal"/></svg><span>Stash</span></h1>
+    <button class="pill" id="syncPill"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-phone"/></svg><span id="syncTxt">Local only</span></button>
+    <button class="iconbtn" id="themeBtn" title="Light / dark"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-moon"/></svg></button>
   </div>
 
   <main>
@@ -212,10 +254,10 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
         </div>
       </div>
       <div class="left" id="leftTxt"><b>$0</b> to go</div>
-      <div class="done-banner" id="doneBanner" style="display:none">🎉 Goal reached — go buy it!</div>
+      <div class="done-banner" id="doneBanner" style="display:none"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-check"/></svg><span>Goal reached — go buy it!</span></div>
       <div class="stats">
-        <div class="stat"><div class="k">Deposits</div><div class="v" id="stCount">0</div></div>
-        <div class="stat"><div class="k">Avg deposit</div><div class="v" id="stAvg">—</div></div>
+        <div class="stat"><div class="k">Today</div><div class="v" id="stToday">—</div></div>
+        <div class="stat"><div class="k">Last 7 days</div><div class="v" id="stWeek">—</div></div>
         <div class="stat"><div class="k">Weekly pace</div><div class="v" id="stRate">—</div></div>
         <div class="stat"><div class="k">Est. finish</div><div class="v" id="stEta">—</div></div>
       </div>
@@ -224,8 +266,8 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
     <!-- ADD -->
     <section class="screen" id="s-add">
       <div class="seg" id="seg">
-        <button data-mode="in" class="on">➕ Money in</button>
-        <button data-mode="out">➖ Money out</button>
+        <button data-mode="in" class="on"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-plus"/></svg>Money in</button>
+        <button data-mode="out"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-minus"/></svg>Money out</button>
       </div>
       <div class="amtbig zero" id="amtBig">$0</div>
       <input class="note" id="noteInput" maxlength="40" placeholder="Where from? (allowance, work, gift…)">
@@ -235,9 +277,19 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
     </section>
 
     <!-- HISTORY -->
-    <section class="screen" id="s-hist">
-      <div class="histhead"><h2>History</h2><span id="histCount"></span></div>
-      <div class="list" id="history"></div>
+    <section class="screen scroll" id="s-hist">
+      <div class="dayhead"><h2 id="todayName">Today</h2><span id="histCount"></span></div>
+      <div class="stats4">
+        <div class="stat"><div class="k">Best day</div><div class="v" id="stBest">—</div></div>
+        <div class="stat"><div class="k">Streak</div><div class="v" id="stStreak">—</div></div>
+        <div class="stat"><div class="k">Days saving</div><div class="v" id="stDays">—</div></div>
+        <div class="stat"><div class="k">Per day avg</div><div class="v" id="stPerDay">—</div></div>
+      </div>
+      <div class="card chartcard">
+        <div class="chartlbl"><span>Last 14 days</span><b id="chartTip">—</b></div>
+        <svg id="chart" viewBox="0 0 336 138" role="img" aria-label="Money in and out per day over the last 14 days"></svg>
+      </div>
+      <div id="history"></div>
     </section>
 
     <!-- SETTINGS -->
@@ -287,10 +339,12 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
             <p class="hint" id="acctHint"></p>
           </div>
           <div id="keyBox" style="display:none">
+            <label for="projUrl">Supabase project URL</label>
+            <input class="fld" id="projUrl" placeholder="https://xxxx.supabase.co">
             <label for="anonKey">Supabase anon key</label>
             <input class="fld" id="anonKey" placeholder="paste the anon / publishable key">
-            <button class="btn block" id="saveKeyBtn">Save key</button>
-            <p class="hint">One-time step: Supabase dashboard → Project Settings → API → anon / publishable key. It's a public key; your rows are protected by row level security.</p>
+            <button class="btn block" id="saveKeyBtn">Connect</button>
+            <p class="hint">Both are on the Supabase dashboard under Project Settings → API. The anon key is public by design — your rows are protected by row level security.</p>
           </div>
         </div>
       </div>
@@ -310,10 +364,10 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   </main>
 
   <nav class="tabbar" id="tabs">
-    <button class="tab on" data-scr="home"><i>🎯</i>Goal</button>
-    <button class="tab" data-scr="add"><i>➕</i>Add</button>
-    <button class="tab" data-scr="hist"><i>🧾</i>History</button>
-    <button class="tab" data-scr="set"><i>⚙️</i>Settings</button>
+    <button class="tab on" data-scr="home"><svg class="ic-svg" aria-hidden="true"><use href="#i-goal"/></svg>Goal</button>
+    <button class="tab" data-scr="add"><svg class="ic-svg" aria-hidden="true"><use href="#i-plus"/></svg>Add</button>
+    <button class="tab" data-scr="hist"><svg class="ic-svg" aria-hidden="true"><use href="#i-days"/></svg>Days</button>
+    <button class="tab" data-scr="set"><svg class="ic-svg" aria-hidden="true"><use href="#i-set"/></svg>Settings</button>
   </nav>
 </div>
 
@@ -360,6 +414,7 @@ const DAY = 86400000;
 const KEY = 'kupa.v1';                 // kept from the first version so old data still loads
 const SESS = 'stash.session';
 const KEYOVR = 'stash.anonkey';
+const URLOVR = 'stash.url';
 const def = { name:'', target:0, cur:'₪', entries:[], theme:'light', celebrated:false,
               gUpdated:0, deleted:[] };
 let db = load();
@@ -380,7 +435,8 @@ const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&
    ============================================================ */
 const cfg = window.STASH_CONFIG || { url:'', anonKey:'' };
 const anonKey = () => localStorage.getItem(KEYOVR) || cfg.anonKey || '';
-const configured = () => !!(cfg.url && anonKey());
+const baseUrl = () => (localStorage.getItem(URLOVR) || cfg.url || '').replace(/\/+$/,'');
+const configured = () => !!(baseUrl() && anonKey());
 let session = null;
 try{ session = JSON.parse(localStorage.getItem(SESS)); }catch(e){}
 let syncing = false, syncErr = '', pendingT;
@@ -392,7 +448,7 @@ function setSession(s){
 }
 
 async function api(path, opts = {}){
-  const r = await fetch(cfg.url + path, {
+  const r = await fetch(baseUrl() + path, {
     ...opts,
     headers: { 'apikey': anonKey(), 'Content-Type':'application/json', ...(opts.headers||{}) }
   });
@@ -487,7 +543,7 @@ const syncSoon = () => { clearTimeout(pendingT); pendingT = setTimeout(() => syn
 addEventListener('online', () => sync('online'));
 
 function paintSync(){
-  const dot = $('#syncDot'), st = $('#syncState'), pill = $('#syncTxt');
+  const dot = $('#syncDot'), st = $('#syncState'), pill = $('#syncPill');
   let cls = '', txt, short;
   if(!configured()){ cls=''; txt = 'Saved on this device only — no key set'; short = 'Local only'; }
   else if(!session){ cls=''; txt = 'Saved on this device only'; short = 'Local only'; }
@@ -497,18 +553,24 @@ function paintSync(){
   else { cls='ok'; txt = 'Synced' + (db.lastSync ? ' · ' + when(db.lastSync) : ''); short = 'Synced'; }
   dot.className = 'dot ' + cls;
   st.textContent = txt;
-  pill.textContent = (session && !syncing && !syncErr ? '☁️ ' : '') + short;
+  pill.querySelector('use').setAttribute('href', session && !syncErr ? '#i-cloud' : '#i-phone');
+  pill.querySelector('#syncTxt').textContent = short;
   $('#authBox').style.display = (configured() && !session) ? '' : 'none';
   $('#acctBox').style.display = session ? '' : 'none';
   $('#keyBox').style.display  = configured() ? 'none' : '';
+  if(!configured()){ $('#projUrl').value = $('#projUrl').value || baseUrl(); }
   if(session) $('#acctHint').textContent = 'Signed in as ' + (session.email || 'your account') + '.';
 }
 
 $('#syncPill').onclick = () => go('set');
 $('#saveKeyBtn').onclick = () => {
   const k = $('#anonKey').value.trim();
+  const u = $('#projUrl').value.trim().replace(/\/+$/,'');
+  if(u && !/^https:\/\/.+/.test(u)){ toast('The URL should start with https://'); return; }
   if(k.length < 20){ toast('That key looks too short'); return; }
-  localStorage.setItem(KEYOVR, k); paintSync(); toast('Key saved');
+  if(u) localStorage.setItem(URLOVR, u);
+  localStorage.setItem(KEYOVR, k);
+  paintSync(); toast('Connected — now create an account or sign in');
 };
 
 async function auth(kind){
@@ -558,7 +620,7 @@ $('#tabs').onclick = e => { const b = e.target.closest('.tab'); if(b) go(b.datas
    ============================================================ */
 function applyTheme(){
   document.documentElement.setAttribute('data-theme', db.theme);
-  $('#themeBtn').textContent = db.theme === 'dark' ? '☀️' : '🌙';
+  $('#themeBtn').querySelector('use').setAttribute('href', db.theme === 'dark' ? '#i-sun' : '#i-moon');
   document.querySelector('meta[name=theme-color]').content = db.theme === 'dark' ? '#0f1220' : '#f4f6fb';
 }
 $('#themeBtn').onclick = () => { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); };
@@ -607,7 +669,7 @@ function addEntry(amount, note){
   db.entries.push({ id: uid(), amount, note: note || '', ts: Date.now() });
   save(); render(); syncSoon();
   if(before < db.target && total() >= db.target && !db.celebrated){
-    db.celebrated = true; db.gUpdated = Date.now(); save(); confetti(); toast('🎉 Goal reached!'); go('home');
+    db.celebrated = true; db.gUpdated = Date.now(); save(); confetti(); toast('Goal reached!'); go('home');
   } else {
     toast((amount > 0 ? 'Added ' : 'Took out ') + fmt(Math.abs(amount)));
   }
@@ -643,12 +705,13 @@ $('#quick').onclick = e => {
   buf = String((parseFloat(buf || '0') + parseFloat(b.dataset.v)));
   paintAmt();
 };
-$('#pad').innerHTML = ['1','2','3','4','5','6','7','8','9','.','0','⌫']
-  .map(k => `<button class="key" data-k="${k}">${k}</button>`).join('');
+$('#pad').innerHTML = ['1','2','3','4','5','6','7','8','9','.','0','back']
+  .map(k => `<button class="key" data-k="${k}" aria-label="${k === 'back' ? 'Delete' : k}">` +
+            (k === 'back' ? '<svg class="ic-svg" aria-hidden="true"><use href="#i-back"/></svg>' : k) + '</button>').join('');
 $('#pad').onclick = e => {
   const b = e.target.closest('.key'); if(!b) return;
   const k = b.dataset.k;
-  if(k === '⌫') buf = buf.slice(0,-1);
+  if(k === 'back') buf = buf.slice(0,-1);
   else if(k === '.'){ if(!buf.includes('.')) buf = (buf || '0') + '.'; }
   else if(buf.replace('.','').length < 9) buf = (buf === '0' ? '' : buf) + k;
   paintAmt();
@@ -713,6 +776,94 @@ function toast(msg, undo){
 }
 
 /* ============================================================
+   days — everything keyed to the local calendar day
+   ============================================================ */
+const pad2 = n => String(n).padStart(2,'0');
+const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); };
+const keyToDate = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+const todayKey = () => dayKey(Date.now());
+
+function dayLabel(k){
+  if(k === todayKey()) return 'Today';
+  if(k === dayKey(Date.now() - DAY)) return 'Yesterday';
+  return keyToDate(k).toLocaleDateString('en-US',{ weekday:'short', month:'short', day:'numeric' });
+}
+
+function byDay(){
+  const m = new Map();
+  db.entries.forEach(e => {
+    const k = dayKey(e.ts);
+    const g = m.get(k) || { net:0, in:0, out:0, items:[] };
+    g.net += e.amount;
+    if(e.amount > 0) g.in += e.amount; else g.out -= e.amount;
+    g.items.push(e);
+    m.set(k, g);
+  });
+  return m;
+}
+
+// days in a row, ending today or yesterday, where money came in
+function streakOf(map){
+  let t = new Date(); t.setHours(0,0,0,0); t = t.getTime();
+  if(!((map.get(dayKey(t)) || {}).in > 0)) t -= DAY;
+  let n = 0;
+  while((map.get(dayKey(t)) || {}).in > 0){ n++; t -= DAY; }
+  return n;
+}
+
+/* ---- 14-day chart: bars up for money in, down for money out ---- */
+function barPath(x, w, y0, y1, r){
+  const h = Math.abs(y1 - y0), rr = Math.max(0, Math.min(r, w/2, h));
+  return y1 < y0
+    ? `M${x} ${y0} V${y1+rr} a${rr} ${rr} 0 0 1 ${rr} ${-rr} h${w-2*rr} a${rr} ${rr} 0 0 1 ${rr} ${rr} V${y0} Z`
+    : `M${x} ${y0} V${y1-rr} a${rr} ${rr} 0 0 0 ${rr} ${rr} h${w-2*rr} a${rr} ${rr} 0 0 0 ${rr} ${-rr} V${y0} Z`;
+}
+
+function renderChart(map){
+  const N = 14, W = 336, H = 138, TOP = 10, BASE = 112, slot = W/N, bw = slot - 8;
+  const days = [];
+  for(let i = N-1; i >= 0; i--){
+    const k = dayKey(Date.now() - i*DAY);
+    days.push({ k, net: (map.get(k) || {}).net || 0 });
+  }
+  const up = Math.max(0, ...days.map(d => d.net));
+  const down = Math.max(0, ...days.map(d => -d.net));
+  const zero = down > 0
+    ? Math.round(Math.min(BASE - 26, Math.max(TOP + 26, TOP + (BASE - TOP) * (up / (up + down)))))
+    : BASE;
+  const sUp = up > 0 ? (zero - TOP) / up : 0;
+  const sDown = down > 0 ? (BASE - zero) / down : 0;
+  const tk = todayKey();
+
+  let out = `<line x1="0" y1="${zero}" x2="${W}" y2="${zero}" stroke="var(--viz-axis)" stroke-width="1"/>`;
+  days.forEach((d, i) => {
+    if(d.net !== 0){
+      const y1 = d.net > 0 ? zero - d.net*sUp : zero + (-d.net)*sDown;
+      out += `<path d="${barPath(i*slot + (slot-bw)/2, bw, zero, y1, 4)}"
+                fill="${d.net > 0 ? 'var(--viz-in)' : 'var(--viz-out)'}"/>`;
+    }
+    const isToday = d.k === tk;
+    out += `<text x="${i*slot + slot/2}" y="${H-6}" text-anchor="middle" font-size="10"
+              font-weight="${isToday ? 800 : 500}" fill="${isToday ? 'var(--viz-in)' : 'var(--viz-axis)'}"
+              >${keyToDate(d.k).toLocaleDateString('en-US',{weekday:'narrow'})}</text>`;
+    out += `<rect class="hit" data-k="${d.k}" x="${i*slot}" y="0" width="${slot}" height="${BASE+10}" fill="transparent"/>`;
+  });
+  $('#chart').innerHTML = out;
+  showTip(tk, map);
+}
+
+function showTip(k, map){
+  const net = (map.get(k) || {}).net || 0;
+  const tip = $('#chartTip');
+  tip.textContent = dayLabel(k) + ' · ' + (net > 0 ? '+' : net < 0 ? '−' : '') + fmt(Math.abs(net));
+  tip.style.color = net > 0 ? 'var(--viz-in)' : net < 0 ? 'var(--viz-out)' : 'var(--muted)';
+}
+$('#chart').addEventListener('pointerdown', e => {
+  const h = e.target.closest('.hit');
+  if(h) showTip(h.dataset.k, byDay());
+});
+
+/* ============================================================
    render
    ============================================================ */
 function when(ts){
@@ -744,15 +895,19 @@ function render(){
     : `<b>${fmt(left)}</b> to go`;
 
   const ins = db.entries.filter(e => e.amount > 0);
-  $('#stCount').textContent = ins.length;
-  $('#stAvg').textContent = ins.length ? fmt(ins.reduce((s,e)=>s+e.amount,0)/ins.length) : '—';
+  const map = byDay();
+  const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
+  const todayNet = (map.get(todayKey()) || {}).net || 0;
+  const weekNet = db.entries.filter(e => e.ts >= Date.now() - 7*DAY).reduce((a,e) => a + e.amount, 0);
+  $('#stToday').textContent = todayNet ? signed(todayNet) : 'nothing yet';
+  $('#stWeek').textContent = weekNet ? signed(weekNet) : '—';
 
   const first = db.entries.length ? Math.min(...db.entries.map(e => e.ts)) : 0;
   const days = first ? (Date.now() - first) / DAY : 0;
   const perDay = days >= 1 ? sum / days : 0;      // needs a day of history to mean anything
   if(done){
     $('#stRate').textContent = perDay > 0 ? fmt(perDay * 7) : '—';
-    $('#stEta').textContent = '✅ Reached';
+    $('#stEta').textContent = 'Reached';
   } else if(perDay > 0){
     $('#stRate').textContent = fmt(perDay * 7);
     const d = Math.ceil(left / perDay);
@@ -760,19 +915,41 @@ function render(){
       : new Date(Date.now() + d * DAY).toLocaleDateString('en-US',{day:'numeric',month:'short'});
   } else { $('#stRate').textContent = '—'; $('#stEta').textContent = '—'; }
 
-  const list = [...db.entries].sort((a,b) => b.ts - a.ts);
-  $('#histCount').textContent = list.length ? `${list.length} ${list.length === 1 ? 'entry' : 'entries'} · ${fmt(sum)}` : '';
-  $('#history').innerHTML = list.length ? list.map(e => `
-    <div class="item">
-      <div class="ic">${e.amount > 0 ? '💰' : '🧾'}</div>
-      <div class="txt">
-        <div class="t1">${esc(e.note) || (e.amount > 0 ? 'Deposit' : 'Taken out')}</div>
-        <div class="t2">${when(e.ts)}</div>
-      </div>
-      <div class="amt ${e.amount < 0 ? 'neg' : ''}">${e.amount > 0 ? '+' : '−'}${fmt(Math.abs(e.amount))}</div>
-      <button class="del" data-id="${e.id}" aria-label="Delete">🗑</button>
-    </div>`).join('')
-    : `<div class="empty">Nothing here yet.<br>Add every bit of money that comes in 👆</div>`;
+  // ---- days screen ----
+  $('#todayName').textContent = new Date().toLocaleDateString('en-US',{ weekday:'long', month:'short', day:'numeric' });
+  $('#histCount').textContent = ins.length
+    ? `${ins.length} deposit${ins.length === 1 ? '' : 's'} · avg ${fmt(ins.reduce((a,e)=>a+e.amount,0)/ins.length)}`
+    : '';
+
+  let best = 0;
+  map.forEach(g => { if(g.in > best) best = g.in; });
+  $('#stBest').textContent = best ? fmt(best) : '—';
+  const st = streakOf(map);
+  $('#stStreak').textContent = st ? st + (st === 1 ? ' day' : ' days') : 'none';
+  const activeDays = [...map.values()].filter(g => g.in > 0).length;
+  $('#stDays').textContent = activeDays || '—';
+  $('#stPerDay').textContent = perDay > 0 ? fmt(perDay) : '—';
+
+  renderChart(map);
+
+  const keys = [...map.keys()].sort().reverse();
+  $('#history').innerHTML = keys.length ? keys.map(k => {
+    const g = map.get(k);
+    const rows = [...g.items].sort((a,b) => b.ts - a.ts).map(e => `
+      <div class="item">
+        <div class="ic"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-${e.amount > 0 ? 'in' : 'out'}"/></svg></div>
+        <div class="txt">
+          <div class="t1">${esc(e.note) || (e.amount > 0 ? 'Deposit' : 'Taken out')}</div>
+          <div class="t2">${new Date(e.ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+        </div>
+        <div class="amt ${e.amount < 0 ? 'neg' : ''}">${e.amount > 0 ? '+' : '−'}${fmt(Math.abs(e.amount))}</div>
+        <button class="del" data-id="${e.id}" aria-label="Delete">
+          <svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-trash"/></svg></button>
+      </div>`).join('');
+    return `<div class="dayrow"><span>${dayLabel(k)}</span>
+        <b class="${g.net < 0 ? 'neg' : ''}">${g.net > 0 ? '+' : g.net < 0 ? '−' : ''}${fmt(Math.abs(g.net))}</b>
+      </div>${rows}`;
+  }).join('') : `<div class="empty">Nothing here yet.<br>Add every bit of money that comes in.</div>`;
   paintAmt();
 }
 

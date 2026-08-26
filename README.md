@@ -1,4 +1,4 @@
-# 🎯 Stash — a money counter for one goal
+# Stash — a money counter for one goal
 
 Pick something you want to buy and how much it costs, then log every bit of money
 that comes in (allowance, pay, a gift). The app shows how much you've collected,
@@ -12,7 +12,7 @@ the height of your display.
 |-----|--------------|
 | **Goal** | Progress ring, how much is left, and four stats |
 | **Add** | Money in / money out, a keypad, quick +20…+500 chips, a note field |
-| **History** | Every entry with delete + undo (the list scrolls, the page doesn't) |
+| **Days** | Day-by-day stats, a 14-day chart, and every entry grouped under its day |
 | **Settings** | Goal and currency, cloud sync, backup, reset |
 
 ## Running it
@@ -30,6 +30,21 @@ python3 -m http.server 8000
 # then http://localhost:8000
 ```
 
+## Day stats
+
+The app works off the local calendar day, so it always knows what today is.
+
+- **Goal screen** — what came in *today* and over the *last 7 days*.
+- **Days screen** — best day, current streak (days in a row that money came in),
+  how many days you've put something away, and the average per day.
+- **14-day chart** — one bar per day: up for money in, down for money out.
+  Tap any bar to read that day's total. Today's letter is highlighted.
+- **The entry list is grouped by day**, each day showing its own total.
+
+The chart's two colors are the blue↔red diverging pair, checked with a
+colorblind-separation validator against both the light and dark surfaces —
+red/green would have failed for deuteranopes.
+
 ## Cloud sync (Supabase)
 
 Data is stored **locally first** — the app is fully usable signed out and offline.
@@ -37,7 +52,12 @@ Sign in and it also syncs to Supabase, so the same goal follows you across devic
 
 ### One-time setup
 
-`config.js` already points at the project. Add the anon key:
+Two ways to point the app at a project:
+
+**From inside the app** — Settings → Cloud sync → paste the **project URL** and
+**anon key** → Connect. Nothing to edit, and it's stored on the device.
+
+**Or in `config.js`** — set the URL and add the anon key:
 
 ```js
 window.STASH_CONFIG = window.STASH_CONFIG || {
@@ -46,9 +66,11 @@ window.STASH_CONFIG = window.STASH_CONFIG || {
 };
 ```
 
-Get it from the Supabase dashboard → **Project Settings → API → anon / publishable key**.
-You can also paste it inside the app under **Settings → Cloud sync** instead of editing the file.
+Both values are on the Supabase dashboard under **Project Settings → API**.
 The anon key is meant to be public — row level security is what protects the rows.
+
+Whichever project you point at needs the two tables. Run `supabase/schema.sql`
+in that project's SQL editor once (it's idempotent — safe to re-run).
 
 Then, in the app: **Settings → Cloud sync → Create account** (email + password), and
 sign in with the same account on any other device.
@@ -62,7 +84,7 @@ sign in with the same account on any other device.
 
 ### Tables
 
-Created by the migration `create_stash_goal_and_entries`:
+Created by `supabase/schema.sql`:
 
 | Table | Rows |
 |-------|------|
@@ -74,7 +96,7 @@ a signed-in user can only touch rows where `auth.uid() = user_id`.
 
 ## Other features
 
-- **Confetti** when you hit the goal 🎉
+- **Confetti** when you hit the goal
 - **Stats** — deposits, average deposit, weekly pace, estimated finish date
   (the pace figures need at least a day of history before they mean anything)
 - **Dark / light mode**
@@ -89,3 +111,10 @@ a signed-in user can only touch rows where `auth.uid() = user_id`.
 | `config.js` | Supabase URL and anon key |
 | `manifest.json` | install-as-an-app (PWA) settings |
 | `sw.js` | service worker for offline use |
+| `supabase/schema.sql` | the tables and row level security policies |
+
+## Icons
+
+Every icon is inline SVG drawn in the page (a single `<symbol>` sprite at the top
+of `index.html`) — no emoji anywhere in the interface, and nothing loaded from a
+CDN.
