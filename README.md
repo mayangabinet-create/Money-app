@@ -13,27 +13,24 @@ your display.
 | **Goal** | Progress ring, how much is left, today, last 7 days, pace and finish date |
 | **Add** | Money in / money out, a keypad, source chips, quick +20…+500, a note |
 | **Days** | Day stats, two charts, where the money came from, every entry grouped by day |
-| **Settings** | Cool mode, goals, expected income, cloud sync, backup, reset |
+| **Settings** | Show off, goals, expected income, cloud sync, backup, reset |
 
-### Cool mode 🆒
+### Show off 🆒
 
-**Settings → Look and feel** has a switch that makes the whole app show off: a neon
-palette held to one narrow band of hues — violet through azure to cyan — an aurora drifting behind every screen, glass cards, screens that slide in,
-a gold coin spinning in real CSS 3D behind the progress ring — it leans toward your
-finger — and confetti that throws tumbling coins, on every deposit and not just at
-the finish line.
+**Settings → Look and feel** has a switch that makes the whole app show off. Its
+palette is held to one narrow band of hues — violet through azure to cyan — so it
+reads as one design and not as a rainbow: an aurora drifting behind every screen,
+gold coins tumbling across it, glass cards under a neon edge that crawls around
+them, screens that flip in like cube faces, the app leaning with your finger, a
+coin built out of two faces and 24 rim slabs spinning in real CSS 3D behind the
+progress ring with three neon satellites orbiting it, the total counting up to its
+new value instead of snapping there, and fireworks with a screen kick and a buzz
+every time money lands.
 
-Under it sits a second switch, **Extreme**, which turns everything up as far as it
-goes: gold coins tumbling behind the whole app, three neon satellites orbiting the
-ring in 3D, screens that flip in like cube faces, the app leaning with your finger,
-the total counting up to its new value, a live neon edge crawling around every card,
-and fireworks with a screen kick and a buzz when money lands. Extreme switches Cool
-mode on with it, and switching Cool mode off takes Extreme with it.
-
-It is only paint. Nothing about your goals, entries or sync changes, both settings
-live on the device they were switched on, and turning them off puts the plain app
-back exactly as it was. Anyone who asks their system for reduced motion gets the
-colours without the movement.
+It is only paint. Nothing about your goals, entries or sync changes, the setting
+lives on the device it was switched on, and turning it off puts the plain app back
+exactly as it was. Anyone who asks their system for reduced motion gets the colours
+without the movement.
 
 ## Running it
 
