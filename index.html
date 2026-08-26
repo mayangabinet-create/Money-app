@@ -65,16 +65,22 @@ main{flex:1;position:relative;min-height:0}
 
 /* ---------- tab bar ---------- */
 .tabbar{
-  flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
-  padding:6px 8px calc(env(safe-area-inset-bottom) + 8px);
+  flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
+  padding:8px 8px calc(env(safe-area-inset-bottom) + 13px);
   background:var(--bar);backdrop-filter:blur(12px);border-top:1px solid var(--line)
 }
 .tab{
-  border:0;background:transparent;cursor:pointer;color:var(--muted);min-height:62px;padding:10px 2px;
-  border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-  font-size:12px;font-weight:700
+  border:0;background:transparent;cursor:pointer;color:var(--muted);min-height:76px;padding:12px 2px;
+  border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  font-size:13px;font-weight:700
 }
-.tab .ic-svg{width:25px;height:25px}
+.tab .ic-svg{width:29px;height:29px}
+/* the shortest phones cannot spare the extra height */
+@media(max-height:600px){
+  .tabbar{gap:4px;padding:6px 8px calc(env(safe-area-inset-bottom) + 8px)}
+  .tab{min-height:62px;padding:10px 2px;border-radius:18px;gap:5px;font-size:12px}
+  .tab .ic-svg{width:25px;height:25px}
+}
 .tab.on{color:var(--accent);background:var(--chip)}
 
 /* ---------- icons ---------- */
@@ -135,6 +141,9 @@ main{flex:1;position:relative;min-height:0}
   color:var(--txt);font-weight:700;font-size:13px;cursor:pointer}
 .chip:active{background:var(--chip)}
 .pad{flex:1;min-height:140px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:7px}
+/* on a short screen the keypad's own minimum pushed Add under the tab bar;
+   1fr rows carry a content minimum of their own, so they need minmax too */
+@media(max-height:600px){.pad{min-height:104px;grid-auto-rows:minmax(0,1fr)}}
 .key{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:16px;
   font-size:21px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
 .key:active{background:var(--chip);transform:scale(.97)}
