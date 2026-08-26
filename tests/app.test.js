@@ -550,6 +550,38 @@ function seed(page, opts = {}) {
   eq('old entries survive', await p3.textContent('#savedTxt'), '$550');
   ok('no onboarding for upgraded data', !(await p3.locator('#onboard').isVisible()));
 
+  // ---------------------------------------------------------------- cool mode
+  // its own context: `page` is signed in to an account the delete test emptied
+  section('cool mode');
+  const ctxF = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pF = await ctxF.newPage();
+  pF.on('pageerror', e => errors.push('cool: ' + e.message));
+  await pF.goto(APP); await seed(pF);
+  await pF.goto(APP); await pF.waitForTimeout(400);
+  await pF.click('#loginSkip'); await pF.waitForTimeout(250);
+  const beforeFun = await pF.textContent('#savedTxt');
+  await pF.click('.tab[data-scr="set"]'); await pF.waitForTimeout(200);
+  eq('cool mode starts off', await pF.getAttribute('#funBtn', 'aria-checked'), 'false');
+  eq('the plain app carries no fun flag', await pF.getAttribute('html', 'data-fun'), 'off');
+  // 2 coin faces + 24 rim slabs: the 3D coin is built, not a picture
+  eq('the 3D coin is assembled', await pF.locator('#funCoin > *').count(), 26);
+  await pF.click('#funBtn'); await pF.waitForTimeout(400);
+  eq('the switch turns cool mode on', await pF.getAttribute('html', 'data-fun'), 'on');
+  eq('the switch reports its state', await pF.getAttribute('#funBtn', 'aria-checked'), 'true');
+  ok('the aurora shows up', await pF.locator('#aurora').isVisible());
+  ok('the goal ring gets its spinning coin',
+     await pF.locator('#ringCoin').evaluate(el => getComputedStyle(el).animationName === 'coinspin'));
+  await pF.reload(); await pF.waitForTimeout(500);
+  eq('cool mode survives a reload', await pF.getAttribute('html', 'data-fun'), 'on');
+  eq('cool mode is stored with the other settings',
+     await pF.evaluate(() => JSON.parse(localStorage.getItem('kupa.v1')).fun), true);
+  eq('the money is untouched', await pF.textContent('#savedTxt'), beforeFun);
+  await pF.click('.tab[data-scr="set"]'); await pF.waitForTimeout(200);
+  await pF.click('#funBtn'); await pF.waitForTimeout(300);
+  eq('turning it off puts the plain app back', await pF.getAttribute('html', 'data-fun'), 'off');
+  ok('the aurora goes away', !(await pF.locator('#aurora').isVisible()));
+  await ctxF.close();
+
   eq('no javascript errors', errors.length, 0, JSON.stringify(errors));
 
   console.log(`\n${pass} passed, ${fail} failed`);

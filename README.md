@@ -13,7 +13,20 @@ your display.
 | **Goal** | Progress ring, how much is left, today, last 7 days, pace and finish date |
 | **Add** | Money in / money out, a keypad, source chips, quick +20…+500, a note |
 | **Days** | Day stats, two charts, where the money came from, every entry grouped by day |
-| **Settings** | Goals, expected income, cloud sync, backup, reset |
+| **Settings** | Cool mode, goals, expected income, cloud sync, backup, reset |
+
+### Cool mode 🆒
+
+**Settings → Look and feel** has a switch that makes the whole app show off: a neon
+palette, an aurora drifting behind every screen, glass cards, screens that slide in,
+a gold coin spinning in real CSS 3D behind the progress ring — it leans toward your
+finger — and confetti that throws tumbling coins, on every deposit and not just at
+the finish line.
+
+It is only paint. Nothing about your goals, entries or sync changes, the setting
+lives on the device it was switched on, and turning it off puts the plain app back
+exactly as it was. Anyone who asks their system for reduced motion gets the colours
+without the movement.
 
 ## Running it
 
