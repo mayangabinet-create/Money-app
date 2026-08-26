@@ -5,5 +5,5 @@
 // You can also paste it once inside the app: Settings -> Cloud sync.
 window.STASH_CONFIG = window.STASH_CONFIG || {
   url: 'https://yshiopubnvibpimpbqdj.supabase.co',
-  anonKey: ''
+  anonKey: 'sb_publishable_-9CGvs5HmNLqCyNN3rlcsQ_H3jBCLfh'
 };
