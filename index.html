@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1220">
+<title>קופה – חיסכון למטרה</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fb; --bg2:#ffffff; --card:#ffffff; --line:#e6e9f2;
+  --txt:#141828; --muted:#6b7391; --accent:#4f46e5; --accent2:#22c55e;
+  --danger:#e11d48; --chip:#f0f2f8; --shadow:0 6px 24px rgba(20,24,40,.07);
+  --ring-bg:#e8ebf5;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --bg2:#151a2d; --card:#171c30; --line:#252b45;
+  --txt:#eef1f8; --muted:#9aa2c0; --accent:#7c7cff; --accent2:#3ddc84;
+  --danger:#ff6b8a; --chip:#1e2440; --shadow:0 6px 28px rgba(0,0,0,.35);
+  --ring-bg:#242a44;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Heebo',system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  background:var(--bg); color:var(--txt); min-height:100vh;
+  padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px);
+  transition:background .25s,color .25s;
+}
+.wrap{max-width:520px;margin:0 auto;padding:16px 16px 0}
+header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+header h1{font-size:19px;font-weight:900;margin:0;flex:1;letter-spacing:-.3px}
+.iconbtn{
+  width:40px;height:40px;border-radius:14px;border:1px solid var(--line);
+  background:var(--card);color:var(--txt);font-size:17px;cursor:pointer;
+  display:grid;place-items:center;box-shadow:var(--shadow)
+}
+.iconbtn:active{transform:scale(.94)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+
+/* ===== hero ===== */
+.hero{text-align:center;position:relative;overflow:hidden}
+.hero .goalname{font-size:15px;color:var(--muted);font-weight:500}
+.ringwrap{position:relative;width:212px;height:212px;margin:8px auto 4px}
+.ringwrap svg{transform:rotate(-90deg) scaleX(-1)}
+.ring-track{stroke:var(--ring-bg)}
+.ring-fill{stroke:url(#grad);stroke-linecap:round;transition:stroke-dasharray .8s cubic-bezier(.2,.8,.2,1)}
+.ringtext{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.saved{font-size:34px;font-weight:900;letter-spacing:-1px;line-height:1.1}
+.of{font-size:13px;color:var(--muted);font-weight:500}
+.pct{font-size:13px;font-weight:700;color:var(--accent2);background:var(--chip);padding:2px 10px;border-radius:999px;margin-top:4px}
+.left{margin-top:10px;font-size:14px;color:var(--muted)}
+.left b{color:var(--txt);font-weight:700}
+.done-banner{margin-top:12px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;padding:10px;border-radius:14px;font-weight:700}
+
+/* ===== add ===== */
+.addrow{display:flex;gap:8px}
+.addrow input{
+  flex:1;min-width:0;font-family:inherit;font-size:17px;font-weight:700;
+  padding:14px;border-radius:16px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--txt);outline:none;text-align:right
+}
+.addrow input:focus{border-color:var(--accent)}
+.btn{
+  font-family:inherit;font-weight:700;font-size:16px;border:0;cursor:pointer;
+  padding:14px 18px;border-radius:16px;background:var(--accent);color:#fff;white-space:nowrap
+}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--chip);color:var(--txt)}
+.btn.wide{width:100%;margin-top:10px}
+.quick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.chip{
+  min-width:0;padding:11px 2px;border-radius:14px;border:1px dashed var(--line);
+  background:transparent;color:var(--txt);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer
+}
+.chip:active{background:var(--chip)}
+.note{width:100%;margin-top:10px;font-family:inherit;font-size:15px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg2);color:var(--txt);outline:none}
+.seg{display:flex;background:var(--chip);border-radius:14px;padding:4px;margin-top:10px}
+.seg button{flex:1;padding:9px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
+
+/* ===== stats ===== */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:12px}
+.stat .k{font-size:12px;color:var(--muted);font-weight:500}
+.stat .v{font-size:17px;font-weight:900;margin-top:2px;line-height:1.25;word-break:break-word}
+
+/* ===== history ===== */
+.sechead{display:flex;align-items:center;justify-content:space-between;margin:0 4px 8px}
+.sechead h2{font-size:15px;margin:0;font-weight:700}
+.sechead span{font-size:13px;color:var(--muted)}
+.item{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:17px;background:var(--chip);flex:none}
+.item .txt{flex:1;min-width:0}
+.item .t1{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t2{font-size:12px;color:var(--muted);margin-top:2px}
+.amt{font-weight:900;font-size:16px;color:var(--accent2);white-space:nowrap}
+.amt.neg{color:var(--danger)}
+.del{border:0;background:transparent;color:var(--muted);font-size:17px;cursor:pointer;padding:6px}
+.empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:14px}
+
+/* ===== modal ===== */
+.overlay{position:fixed;inset:0;background:rgba(8,10,20,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.overlay.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:26px 26px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));animation:up .28s cubic-bezier(.2,.9,.2,1)}
+@media(min-width:560px){.overlay{align-items:center}.sheet{border-radius:26px}}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet h3{margin:0 0 14px;font-size:18px}
+label{display:block;font-size:13px;color:var(--muted);font-weight:500;margin:12px 2px 6px}
+.sheet input,.sheet select{width:100%;font-family:inherit;font-size:16px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg2);color:var(--txt);outline:none}
+.sheet input:focus,.sheet select:focus{border-color:var(--accent)}
+.row2{display:flex;gap:10px}.row2>*{flex:1}
+.sheetbtns{display:flex;gap:10px;margin-top:18px}
+.sheetbtns .btn{flex:1;justify-content:center}
+.danger-link{display:block;width:100%;text-align:center;margin-top:14px;background:none;border:0;color:var(--danger);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--txt);color:var(--bg);padding:12px 18px;border-radius:999px;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:99;display:flex;gap:12px;align-items:center}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast button{background:none;border:0;color:var(--accent2);font-family:inherit;font-weight:900;font-size:14px;cursor:pointer}
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎯 קופה</h1>
+    <button class="iconbtn" id="themeBtn" title="מצב תצוגה">🌙</button>
+    <button class="iconbtn" id="editBtn" title="הגדרות מטרה">⚙️</button>
+  </header>
+
+  <!-- HERO -->
+  <section class="card hero">
+    <div class="goalname" id="goalName">המטרה שלי</div>
+    <div class="ringwrap">
+      <svg width="212" height="212" viewBox="0 0 212 212">
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="106" cy="106" r="92" fill="none" stroke-width="16"/>
+        <circle class="ring-fill" id="ring" cx="106" cy="106" r="92" fill="none" stroke-width="16" stroke-dasharray="0 578"/>
+      </svg>
+      <div class="ringtext">
+        <div class="saved" id="savedTxt">0 ₪</div>
+        <div class="of">מתוך <span id="targetTxt">0 ₪</span></div>
+        <div class="pct" id="pctTxt">0%</div>
+      </div>
+    </div>
+    <div class="left" id="leftTxt">נשאר לאסוף <b>0 ₪</b></div>
+    <div class="done-banner" id="doneBanner" style="display:none">🎉 הגעת ליעד! אפשר לקנות</div>
+  </section>
+
+  <!-- ADD -->
+  <section class="card">
+    <div class="seg" id="seg">
+      <button data-mode="in" class="on">➕ קיבלתי כסף</button>
+      <button data-mode="out">➖ הוצאתי</button>
+    </div>
+    <div class="addrow" style="margin-top:10px">
+      <input id="amtInput" type="number" inputmode="decimal" min="0" step="any" placeholder="כמה?">
+      <button class="btn" id="addBtn">הוסף</button>
+    </div>
+    <input class="note" id="noteInput" maxlength="40" placeholder="מאיפה? (דמי כיס, עבודה, מתנה…)">
+    <div class="quick" id="quick"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="card">
+    <div class="stats">
+      <div class="stat"><div class="k">הפקדות</div><div class="v" id="stCount">0</div></div>
+      <div class="stat"><div class="k">ממוצע להפקדה</div><div class="v" id="stAvg">—</div></div>
+      <div class="stat"><div class="k">קצב שבועי</div><div class="v" id="stRate">—</div></div>
+      <div class="stat"><div class="k">הערכת סיום</div><div class="v" id="stEta">—</div></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="card">
+    <div class="sechead"><h2>היסטוריה</h2><span id="histCount"></span></div>
+    <div id="history"></div>
+  </section>
+</div>
+
+<!-- GOAL SHEET -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">מה המטרה?</h3>
+    <label for="gName">מה רוצים לקנות</label>
+    <input id="gName" maxlength="40" placeholder="לדוגמה: אוזניות, אופניים, טיסה">
+    <div class="row2">
+      <div>
+        <label for="gTarget">מחיר / יעד</label>
+        <input id="gTarget" type="number" inputmode="decimal" min="1" step="any" placeholder="2000">
+      </div>
+      <div>
+        <label for="gCur">מטבע</label>
+        <select id="gCur">
+          <option value="₪">₪ שקל</option><option value="$">$ דולר</option>
+          <option value="€">€ אירו</option><option value="£">£ לירה</option>
+        </select>
+      </div>
+    </div>
+    <label for="gStart" id="startLabel">כסף שכבר יש (אופציונלי)</label>
+    <input id="gStart" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+    <div class="sheetbtns">
+      <button class="btn ghost" id="cancelGoal">ביטול</button>
+      <button class="btn" id="saveGoal">שמירה</button>
+    </div>
+    <button class="danger-link" id="resetAll">איפוס הכל ומחיקת ההיסטוריה</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastTxt"></span><button id="undoBtn" style="display:none">ביטול</button></div>
+<canvas id="confetti"></canvas>
+
+<script>
+(() => {
+  const KEY = 'kupa.v1';
+  const $ = s => document.querySelector(s);
+  const def = { name:'', target:0, cur:'₪', entries:[], theme:'light', celebrated:false };
+  let db = load();
+
+  function load(){
+    try{ const r = JSON.parse(localStorage.getItem(KEY)); return r ? {...def, ...r} : {...def}; }
+    catch(e){ return {...def}; }
+  }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
+
+  const fmt = n => {
+    const v = Math.round(n*100)/100;
+    return v.toLocaleString('he-IL',{maximumFractionDigits:2}) + ' ' + db.cur;
+  };
+  const total = () => db.entries.reduce((s,e)=>s+e.amount,0);
+
+  /* ---------- theme ---------- */
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', db.theme);
+    $('#themeBtn').textContent = db.theme === 'dark' ? '☀️' : '🌙';
+    document.querySelector('meta[name=theme-color]').content = db.theme==='dark' ? '#0f1220' : '#f4f6fb';
+  }
+  $('#themeBtn').onclick = () => { db.theme = db.theme==='dark'?'light':'dark'; save(); applyTheme(); };
+
+  /* ---------- goal sheet ---------- */
+  function openSheet(first){
+    $('#sheetTitle').textContent = first ? 'מה המטרה?' : 'עריכת המטרה';
+    $('#gName').value = db.name; $('#gTarget').value = db.target || '';
+    $('#gCur').value = db.cur; $('#gStart').value = '';
+    const showStart = first ? '' : 'none';
+    $('#gStart').style.display = showStart;
+    $('#startLabel').style.display = showStart;
+    $('#resetAll').style.display = first ? 'none' : '';
+    $('#cancelGoal').style.display = (first && !db.target) ? 'none' : '';
+    $('#overlay').classList.add('open');
+    setTimeout(()=>$('#gName').focus(),150);
+  }
+  const closeSheet = () => $('#overlay').classList.remove('open');
+  $('#editBtn').onclick = () => openSheet(false);
+  $('#cancelGoal').onclick = closeSheet;
+  $('#overlay').onclick = e => { if(e.target === $('#overlay') && db.target) closeSheet(); };
+
+  $('#saveGoal').onclick = () => {
+    const t = parseFloat($('#gTarget').value);
+    if(!(t > 0)){ toast('צריך להזין יעד גדול מאפס'); $('#gTarget').focus(); return; }
+    const firstTime = !db.target;
+    db.name = ($('#gName').value.trim()) || 'המטרה שלי';
+    db.target = t;
+    db.cur = $('#gCur').value;
+    if(firstTime){
+      const st = parseFloat($('#gStart').value);
+      if(st > 0) db.entries.push({id:uid(), amount:st, note:'סכום התחלתי', ts:Date.now()});
+    }
+    if(total() < db.target) db.celebrated = false;
+    save(); closeSheet(); render(); toast('נשמר');
+  };
+
+  $('#resetAll').onclick = () => {
+    if(confirm('למחוק את המטרה וכל ההיסטוריה? אי אפשר לשחזר.')){
+      const th = db.theme; db = {...def, theme:th}; save(); closeSheet(); render(); openSheet(true);
+    }
+  };
+
+  /* ---------- add ---------- */
+  let mode = 'in';
+  $('#seg').onclick = e => {
+    const b = e.target.closest('button'); if(!b) return;
+    mode = b.dataset.mode;
+    [...$('#seg').children].forEach(x => x.classList.toggle('on', x === b));
+    $('#addBtn').style.background = mode==='in' ? 'var(--accent)' : 'var(--danger)';
+  };
+
+  const QUICK = [20,50,100,200,500];
+  $('#quick').innerHTML = QUICK.map(v=>`<button class="chip" data-v="${v}">+${v}</button>`).join('');
+  $('#quick').onclick = e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    add(parseFloat(b.dataset.v) * (mode==='in'?1:-1), $('#noteInput').value.trim());
+  };
+
+  $('#addBtn').onclick = () => {
+    const v = parseFloat($('#amtInput').value);
+    if(!(v > 0)){ toast('הזן סכום'); $('#amtInput').focus(); return; }
+    add(v * (mode==='in'?1:-1), $('#noteInput').value.trim());
+    $('#amtInput').value = '';
+  };
+  $('#amtInput').addEventListener('keydown', e => { if(e.key === 'Enter') $('#addBtn').click(); });
+
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+  function add(amount, note){
+    const before = total();
+    db.entries.push({ id:uid(), amount, note: note || '', ts: Date.now() });
+    $('#noteInput').value = '';
+    save(); render();
+    const after = total();
+    if(before < db.target && after >= db.target && !db.celebrated){
+      db.celebrated = true; save(); confetti(); toast('🎉 הגעת ליעד!');
+    } else {
+      toast((amount>0?'נוסף ':'ירד ') + fmt(Math.abs(amount)));
+    }
+  }
+
+  function remove(id){
+    const i = db.entries.findIndex(e => e.id === id); if(i < 0) return;
+    const [gone] = db.entries.splice(i,1);
+    save(); render();
+    toast('נמחק', () => { db.entries.splice(i,0,gone); save(); render(); });
+  }
+
+  /* ---------- toast ---------- */
+  let toastT;
+  function toast(msg, undo){
+    $('#toastTxt').textContent = msg;
+    const ub = $('#undoBtn');
+    ub.style.display = undo ? '' : 'none';
+    ub.onclick = () => { undo && undo(); $('#toast').classList.remove('show'); };
+    $('#toast').classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>$('#toast').classList.remove('show'), undo ? 5000 : 1800);
+  }
+
+  /* ---------- render ---------- */
+  const DAY = 86400000;
+  function render(){
+    const sum = total(), tgt = db.target || 0;
+    const pct = tgt ? Math.min(100, Math.max(0, sum / tgt * 100)) : 0;
+
+    $('#goalName').textContent = db.name || 'המטרה שלי';
+    $('#savedTxt').textContent = fmt(sum);
+    $('#targetTxt').textContent = fmt(tgt);
+    $('#pctTxt').textContent = pct.toFixed(pct >= 10 || pct === 0 ? 0 : 1) + '%';
+
+    const C = 2 * Math.PI * 92;
+    $('#ring').setAttribute('stroke-dasharray', `${(pct/100*C).toFixed(1)} ${C.toFixed(1)}`);
+
+    const left = tgt - sum;
+    const done = left <= 0 && tgt > 0;
+    $('#doneBanner').style.display = done ? '' : 'none';
+    $('#leftTxt').innerHTML = done
+      ? `יש לך <b>${fmt(sum)}</b> — עודף של <b>${fmt(-left)}</b>`
+      : `נשאר לאסוף <b>${fmt(left)}</b>`;
+
+    // stats
+    const ins = db.entries.filter(e => e.amount > 0);
+    $('#stCount').textContent = ins.length;
+    $('#stAvg').textContent = ins.length ? fmt(ins.reduce((s,e)=>s+e.amount,0)/ins.length) : '—';
+
+    const first = db.entries.length ? Math.min(...db.entries.map(e=>e.ts)) : 0;
+    const days = first ? (Date.now() - first) / DAY : 0;
+    const perDay = days >= 1 ? sum / days : 0;   // צריך לפחות יום של היסטוריה כדי לחזות קצב
+    if(done){
+      $('#stRate').textContent = perDay > 0 ? fmt(perDay * 7) : '—';
+      $('#stEta').textContent = '✅ הושג';
+    } else if(perDay > 0){
+      $('#stRate').textContent = fmt(perDay * 7);
+      const d = Math.ceil(left / perDay);
+      const eta = new Date(Date.now() + d * DAY);
+      $('#stEta').textContent = d > 400 ? 'עוד הרבה…'
+        : eta.toLocaleDateString('he-IL',{day:'numeric',month:'short'});
+    } else {
+      $('#stRate').textContent = '—';
+      $('#stEta').textContent = 'עוד מעט…';
+    }
+
+    // history
+    const list = [...db.entries].sort((a,b) => b.ts - a.ts);
+    $('#histCount').textContent = list.length ? `${list.length} רשומות` : '';
+    $('#history').innerHTML = list.length ? list.map(e => `
+      <div class="item">
+        <div class="ic">${e.amount > 0 ? '💰' : '🧾'}</div>
+        <div class="txt">
+          <div class="t1">${esc(e.note) || (e.amount > 0 ? 'הפקדה' : 'הוצאה')}</div>
+          <div class="t2">${when(e.ts)}</div>
+        </div>
+        <div class="amt ${e.amount < 0 ? 'neg' : ''}">${e.amount > 0 ? '+' : '−'}${fmt(Math.abs(e.amount))}</div>
+        <button class="del" data-id="${e.id}" aria-label="מחיקה">🗑</button>
+      </div>`).join('')
+      : `<div class="empty">עוד לא הוספת כלום.<br>כל שקל שנכנס — תוסיף אותו כאן 👆</div>`;
+  }
+
+  $('#history').onclick = e => {
+    const b = e.target.closest('.del'); if(b) remove(b.dataset.id);
+  };
+
+  const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function when(ts){
+    const d = new Date(ts), now = new Date();
+    const dd = Math.floor((now.setHours(0,0,0,0) - new Date(ts).setHours(0,0,0,0)) / DAY);
+    const time = d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    if(dd === 0) return 'היום, ' + time;
+    if(dd === 1) return 'אתמול, ' + time;
+    if(dd < 7) return `לפני ${dd} ימים`;
+    return d.toLocaleDateString('he-IL',{day:'numeric',month:'long'});
+  }
+
+  /* ---------- confetti ---------- */
+  function confetti(){
+    const cv = $('#confetti'), ctx = cv.getContext('2d');
+    cv.width = innerWidth; cv.height = innerHeight;
+    const cols = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4'];
+    const P = Array.from({length:120}, () => ({
+      x: Math.random()*cv.width, y: -20 - Math.random()*cv.height*.5,
+      r: 4 + Math.random()*6, vy: 2 + Math.random()*4, vx: -1.5 + Math.random()*3,
+      c: cols[(Math.random()*cols.length)|0], a: Math.random()*Math.PI
+    }));
+    const t0 = Date.now();
+    (function loop(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      P.forEach(p => {
+        p.y += p.vy; p.x += p.vx; p.a += .1;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a);
+        ctx.fillStyle = p.c; ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r*.6); ctx.restore();
+      });
+      if(Date.now() - t0 < 3200) requestAnimationFrame(loop);
+      else ctx.clearRect(0,0,cv.width,cv.height);
+    })();
+  }
+
+  /* ---------- init ---------- */
+  applyTheme();
+  render();
+  if(!db.target) openSheet(true);
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
