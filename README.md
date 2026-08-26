@@ -1,86 +1,103 @@
-# Stash — a money counter for one goal
+# Stash — a money counter for the things you're saving for
 
 Pick something you want to buy and how much it costs, then log every bit of money
-that comes in (allowance, pay, a gift). The app shows how much you've collected,
-how much is left, and — at your current pace — roughly when you'll get there.
+that comes in. The app shows how much you've collected, how much is left, where it
+came from, and — at your pace or your plan — when you'll get there.
 
 It's built as an app shell, not a web page: **the page itself never scrolls**.
-Everything lives on four fixed screens reached from the bottom tab bar, exactly
-the height of your display.
+Four fixed screens, reached from the bottom tab bar, each exactly the height of
+your display.
 
 | Tab | What's on it |
 |-----|--------------|
-| **Goal** | Progress ring, how much is left, and four stats |
-| **Add** | Money in / money out, a keypad, quick +20…+500 chips, a note field |
-| **Days** | Day-by-day stats, a 14-day chart, and every entry grouped under its day |
-| **Settings** | Goal and currency, cloud sync, backup, reset |
+| **Goal** | Progress ring, how much is left, today, last 7 days, pace and finish date |
+| **Add** | Money in / money out, a keypad, source chips, quick +20…+500, a note |
+| **Days** | Day stats, two charts, where the money came from, every entry grouped by day |
+| **Settings** | Goals, expected income, cloud sync, backup, reset |
 
 ## Running it
 
 **Simplest:** open `index.html` in a browser. No install, no build step.
 
-**On your phone:** put the folder on any static host (GitHub Pages, Netlify),
-open it and choose "Add to Home Screen". It then runs full-screen like a real
-app and works with no connection.
-
-Locally with a server (needed for the service worker and for cloud sync):
+**On your phone:** put the folder on any static host (GitHub Pages, Netlify), open
+it and choose "Add to Home Screen". It runs full-screen with its own icon and works
+with no connection.
 
 ```bash
-python3 -m http.server 8000
-# then http://localhost:8000
+python3 -m http.server 8000      # then http://localhost:8000
 ```
 
-## Day stats
+## What it does
 
-The app works off the local calendar day, so it always knows what today is.
+### Many goals
+Keep several going at once — a bike, concert tickets, a flight. The goal name at the
+top of the Goal screen opens the switcher; each goal has its own entries, currency
+and progress. Finished goals move to their own section instead of disappearing.
+
+### Every entry is editable
+Tap any entry to change its amount, date, source or note, or delete it. Deletes can
+be undone from the toast.
+
+### Sources
+Tag money as Allowance, Work, Gift, Sold something — or anything you type. The Days
+screen then shows **where it came from**: how much of the goal each source paid for.
+
+### Day stats
+The app works off the local calendar day.
 
 - **Goal screen** — what came in *today* and over the *last 7 days*.
-- **Days screen** — best day, current streak (days in a row that money came in),
-  how many days you've put something away, and the average per day.
-- **14-day chart** — one bar per day: up for money in, down for money out.
-  Tap any bar to read that day's total. Today's letter is highlighted.
-- **The entry list is grouped by day**, each day showing its own total.
+- **Days screen** — best day, current streak (days in a row money came in), how many
+  days you've put something away, and the average per day.
+- **Per day chart** — 14 bars, up for money in, down for money out. Tap one to read
+  that day's total.
+- **Total so far chart** — the running total against the target line, with a dashed
+  projection to the finish.
+- The entry list is grouped by day, each day showing its own total.
 
-The chart's two colors are the blue↔red diverging pair, checked with a
-colorblind-separation validator against both the light and dark surfaces —
-red/green would have failed for deuteranopes.
+### Finish dates that don't lie
+With no plan, the estimate is a **range** between your last-14-days pace and your
+all-time pace, so one good week doesn't overpromise. Tell it what you expect to
+receive regularly (Settings → Money you expect: "allowance, 140, every Friday") and
+the estimate becomes a **planned** finish date instead of a guess.
+
+### Colours
+Chart colours were picked with a colourblind-separation validator, not by eye. The
+in/out pair is blue↔red — green/red fails deuteranope separation badly (ΔE 2.7). The
+source palette is six hues checked against both the light and dark surfaces, and
+every bar is labelled so colour is never the only signal.
 
 ## Cloud sync (Supabase)
 
 Data is stored **locally first** — the app is fully usable signed out and offline.
-Sign in and it also syncs to Supabase, so the same goal follows you across devices.
+Sign in and it also syncs, so the same goals follow you across devices.
 
-### One-time setup
+### Setup
 
-Two ways to point the app at a project:
-
-**From inside the app** — Settings → Cloud sync → paste the **project URL** and
-**anon key** → Connect. Nothing to edit, and it's stored on the device.
-
-**Or in `config.js`** — set the URL and add the anon key:
+`config.js` points at the project. Add the anon key:
 
 ```js
 window.STASH_CONFIG = window.STASH_CONFIG || {
-  url: 'https://kgkdkkqoebnpahvetwzk.supabase.co',
+  url: 'https://yshiopubnvibpimpbqdj.supabase.co',
   anonKey: 'PASTE_IT_HERE'
 };
 ```
 
-Both values are on the Supabase dashboard under **Project Settings → API**.
-The anon key is meant to be public — row level security is what protects the rows.
+Or paste both the URL and the key in the app: **Settings → Cloud sync**. Both values
+are in the Supabase dashboard under **Project Settings → API**. The anon key is
+public by design — row level security is what protects the rows.
 
-Whichever project you point at needs the two tables. Run `supabase/schema.sql`
-in that project's SQL editor once (it's idempotent — safe to re-run).
-
-Then, in the app: **Settings → Cloud sync → Create account** (email + password), and
-sign in with the same account on any other device.
+A project needs the tables once: run `supabase/schema.sql` in its SQL editor.
 
 ### How syncing behaves
 
-- Every change is written locally first, then pushed — the UI never waits on the network.
+- Every change is written locally first — the UI never waits on the network.
+- Only rows changed since the last successful sync are pushed, so an edit made on
+  another device isn't clobbered by a stale copy here.
 - Offline changes queue up (deletions included) and go out when you're back online.
-- Signing in on a device merges: local entries are pushed up, everything on the account comes down.
-- For the goal itself, the side edited most recently wins.
+- Live updates arrive over Supabase Realtime; a 30-second poll and a refresh on
+  focus cover the case where the socket can't connect.
+- Forgot your password? **Settings → Cloud sync → Forgot password?** sends a reset
+  link.
 
 ### Tables
 
@@ -88,20 +105,25 @@ Created by `supabase/schema.sql`:
 
 | Table | Rows |
 |-------|------|
-| `stash_goals` | one row per user — name, target, currency, celebrated flag |
-| `stash_entries` | one row per deposit or withdrawal, keyed by `(user_id, id)` |
+| `stash_goals` | one row per goal — name, target, currency, finished date |
+| `stash_entries` | one deposit or withdrawal, tied to its goal, with its source |
+| `stash_incomes` | the money you expect regularly |
 
-Both have row level security on, with a single policy per table:
-a signed-in user can only touch rows where `auth.uid() = user_id`.
+All three have row level security on: a signed-in user can only touch rows where
+`auth.uid() = user_id`.
 
-## Other features
+## Tests
 
-- **Confetti** when you hit the goal
-- **Stats** — deposits, average deposit, weekly pace, estimated finish date
-  (the pace figures need at least a day of history before they mean anything)
-- **Dark / light mode**
-- **Currency**: ₪ / $ / € / £
-- **Export / import** a JSON backup from Settings
+```bash
+npm install      # playwright
+npm test
+```
+
+`npm test` starts a static server and a mock Supabase, drives the real page in
+Chromium, and prints a PASS/FAIL line per check (91 of them: onboarding, keypad,
+multiple goals, editing, day stats, both charts, sync, a second device, offline
+queueing, layout at three screen sizes, and upgrading data saved by the first
+version). It exits non-zero if anything fails.
 
 ## Files
 
@@ -109,12 +131,10 @@ a signed-in user can only touch rows where `auth.uid() = user_id`.
 |------|------|
 | `index.html` | the whole app — HTML, CSS and JS in one file |
 | `config.js` | Supabase URL and anon key |
-| `manifest.json` | install-as-an-app (PWA) settings |
+| `manifest.json`, `icons/` | install-as-an-app settings and icons |
 | `sw.js` | service worker for offline use |
-| `supabase/schema.sql` | the tables and row level security policies |
+| `supabase/schema.sql` | tables and row level security policies |
+| `tests/` | the end-to-end suite and its mock Supabase |
 
-## Icons
-
-Every icon is inline SVG drawn in the page (a single `<symbol>` sprite at the top
-of `index.html`) — no emoji anywhere in the interface, and nothing loaded from a
-CDN.
+Every icon is inline SVG drawn in the page — no emoji in the interface, nothing
+loaded from a CDN except the font.

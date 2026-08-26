@@ -1,12 +1,13 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#0f1220">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stash">
 <title>Stash – Save toward a goal</title>
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f1220'/><g fill='none' stroke='%237c7cff' stroke-width='2.4'><circle cx='16' cy='16' r='9'/><circle cx='16' cy='16' r='4.5'/></g><circle cx='16' cy='16' r='1.6' fill='%233ddc84'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,167 +18,174 @@
   --txt:#141828; --muted:#6b7391; --accent:#4f46e5; --accent2:#22c55e;
   --danger:#e11d48; --chip:#f0f2f8; --shadow:0 6px 24px rgba(20,24,40,.07);
   --ring-bg:#e8ebf5; --bar:rgba(255,255,255,.92);
-  --viz-in:#4f46e5; --viz-out:#d03b3b; --viz-axis:#c9cee0;
+  --viz-in:#4f46e5; --viz-out:#d03b3b; --viz-axis:#c9cee0; --viz-plan:#8a93b2;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#4a3aa7;
 }
 :root[data-theme="dark"]{
   --bg:#0f1220; --bg2:#151a2d; --card:#171c30; --line:#252b45;
   --txt:#eef1f8; --muted:#9aa2c0; --accent:#7c7cff; --accent2:#3ddc84;
   --danger:#ff6b8a; --chip:#1e2440; --shadow:0 6px 28px rgba(0,0,0,.35);
   --ring-bg:#242a44; --bar:rgba(21,26,45,.92);
-  --viz-in:#3987e5; --viz-out:#e0607e; --viz-axis:#39405f;
+  --viz-in:#3987e5; --viz-out:#e0607e; --viz-axis:#39405f; --viz-plan:#6f7899;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#9085e9;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;padding:0;overflow:hidden;overscroll-behavior:none}
 body{
   font-family:'Inter',system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
-  background:var(--bg); color:var(--txt);
-  position:fixed; inset:0; width:100%;
+  background:var(--bg); color:var(--txt); position:fixed; inset:0; width:100%;
   transition:background .25s,color .25s;
 }
 button,input,select{font-family:inherit}
 
-/* ===== app shell: one screen, never scrolls ===== */
+/* ---------- app shell: never scrolls ---------- */
 #app{
   height:100vh; height:100dvh; max-width:520px; margin:0 auto;
   display:flex; flex-direction:column; overflow:hidden;
   background:var(--bg); border-inline:1px solid var(--line);
 }
 @media(max-width:521px){#app{border:0}}
-
-.topbar{
-  flex:none; display:flex; align-items:center; gap:8px;
-  padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;
-}
+.topbar{flex:none;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 12px) 16px 10px}
 .topbar h1{font-size:18px;font-weight:900;margin:0;flex:1;letter-spacing:-.3px}
 .pill{
-  border:1px solid var(--line); background:var(--card); color:var(--muted);
-  border-radius:999px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer;
-  display:flex; align-items:center; gap:6px; max-width:190px;
+  border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;
+  padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;max-width:170px
 }
 .pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .iconbtn{
   width:36px;height:36px;border-radius:12px;border:1px solid var(--line);
-  background:var(--card);color:var(--txt);font-size:16px;cursor:pointer;display:grid;place-items:center;flex:none
+  background:var(--card);color:var(--txt);cursor:pointer;display:grid;place-items:center;flex:none
 }
 .iconbtn:active,.pill:active{transform:scale(.95)}
-
 main{flex:1;position:relative;min-height:0}
-.screen{
-  position:absolute; inset:0; padding:4px 16px 8px;
-  display:none; flex-direction:column; min-height:0;
-}
+.screen{position:absolute;inset:0;padding:4px 16px 8px;display:none;flex-direction:column;min-height:0}
 .screen.on{display:flex}
 .screen.scroll{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:14px}
 
-/* ===== tab bar ===== */
+/* ---------- tab bar ---------- */
 .tabbar{
-  flex:none; display:grid; grid-template-columns:repeat(4,1fr); gap:2px;
-  padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);
-  background:var(--bar); backdrop-filter:blur(12px); border-top:1px solid var(--line);
+  flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  padding:6px 8px calc(env(safe-area-inset-bottom) + 8px);
+  background:var(--bar);backdrop-filter:blur(12px);border-top:1px solid var(--line)
 }
 .tab{
-  border:0;background:transparent;cursor:pointer;color:var(--muted);
-  min-height:62px;padding:10px 2px;border-radius:18px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-  font-size:12px;font-weight:700;
+  border:0;background:transparent;cursor:pointer;color:var(--muted);min-height:62px;padding:10px 2px;
+  border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  font-size:12px;font-weight:700
 }
 .tab .ic-svg{width:25px;height:25px}
 .tab.on{color:var(--accent);background:var(--chip)}
 
-/* icons */
+/* ---------- icons ---------- */
 .ic-svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
 .ic-sm{width:17px;height:17px}
 .logo{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
-.logo .ic-svg{width:22px;height:22px;color:var(--accent)}
+.logo .ic-svg{color:var(--accent)}
 
-/* days screen */
-.dayhead{flex:none;display:flex;align-items:baseline;justify-content:space-between;padding:8px 4px 6px;gap:8px}
-.dayhead h2{font-size:16px;margin:0;font-weight:800}
-.dayhead span{font-size:12px;color:var(--muted);white-space:nowrap}
-.stats4{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.chartcard{flex:none;padding:12px 12px 8px;margin-bottom:10px}
-.chartlbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;
-  color:var(--muted);font-weight:600;margin-bottom:6px;gap:8px}
-.chartlbl b{font-weight:800;white-space:nowrap}
-#chart{width:100%;height:auto;display:block;touch-action:manipulation}
-.dayrow{display:flex;justify-content:space-between;align-items:baseline;
-  padding:14px 4px 6px;font-size:13px;font-weight:700;color:var(--muted)}
-.dayrow b{font-size:14px;color:var(--accent2)}
-.dayrow b.neg{color:var(--danger)}
-
-/* ===== home ===== */
-.goalname{text-align:center;font-size:15px;color:var(--muted);font-weight:600;flex:none;padding:6px 0 2px}
+/* ---------- goal screen ---------- */
+.goalpick{
+  flex:none;align-self:center;display:flex;align-items:center;gap:6px;border:0;background:transparent;
+  color:var(--muted);font-size:15px;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:12px;max-width:100%
+}
+.goalpick span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.goalpick:active{background:var(--chip)}
 .ringbox{flex:1;min-height:0;display:grid;place-items:center;padding:4px 0}
-.ringwrap{position:relative;height:100%;aspect-ratio:1;max-height:min(44vh,330px);max-width:100%}
+.ringwrap{position:relative;height:100%;aspect-ratio:1;max-height:min(42vh,310px);max-width:100%}
 .ringwrap svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring-track{stroke:var(--ring-bg)}
 .ring-fill{stroke:url(#grad);stroke-linecap:round;transition:stroke-dasharray .8s cubic-bezier(.2,.8,.2,1)}
 .ringtext{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
-.saved{font-size:clamp(23px,6.4vh,34px);font-weight:900;letter-spacing:-1px;line-height:1.1}
+.saved{font-size:clamp(23px,6.2vh,34px);font-weight:900;letter-spacing:-1px;line-height:1.1}
 .of{font-size:clamp(11px,2.2vh,13px);color:var(--muted);font-weight:500}
 .pct{font-size:12px;font-weight:800;color:var(--accent2);background:var(--chip);padding:2px 10px;border-radius:999px;margin-top:4px}
 .left{flex:none;text-align:center;font-size:14px;color:var(--muted);padding:2px 0 10px}
 .left b{color:var(--txt);font-weight:800}
-.done-banner{flex:none;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;padding:9px;border-radius:14px;font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px}
+.done-banner{
+  flex:none;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;padding:9px;border-radius:14px;
+  font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px
+}
 .stats{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:9px 12px}
 .stat .k{font-size:11px;color:var(--muted);font-weight:600}
 .stat .v{font-size:16px;font-weight:900;margin-top:1px;line-height:1.2;word-break:break-word}
 
-/* ===== add ===== */
-.seg{flex:none;display:flex;background:var(--chip);border-radius:14px;padding:4px;margin:6px 0 10px}
-.seg button{flex:1;padding:10px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+/* ---------- add screen ---------- */
+.seg{flex:none;display:flex;background:var(--chip);border-radius:14px;padding:4px;margin:6px 0 8px}
+.seg button{
+  flex:1;padding:10px;border:0;border-radius:11px;background:transparent;color:var(--muted);
+  font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px
+}
 .seg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
-.amtbig{flex:none;text-align:center;font-size:clamp(30px,7vh,42px);font-weight:900;letter-spacing:-1px;padding:2px 0 6px;min-height:48px}
+.amtbig{flex:none;text-align:center;font-size:clamp(28px,6.4vh,40px);font-weight:900;letter-spacing:-1px;padding:0 0 4px;min-height:44px}
 .amtbig.zero{color:var(--muted)}
-.note{flex:none;width:100%;font-size:15px;padding:11px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);outline:none}
+.srcrow{flex:none;display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.srcrow::-webkit-scrollbar{display:none}
+.src{
+  flex:none;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);
+  color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap
+}
+.src.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.note{flex:none;width:100%;font-size:15px;padding:11px 14px;border-radius:14px;border:1px solid var(--line);
+  background:var(--card);color:var(--txt);outline:none}
 .note:focus{border-color:var(--accent)}
-.quick{flex:none;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
-.chip{
-  padding:9px 2px;border-radius:13px;border:1px dashed var(--line);min-width:0;
-  background:transparent;color:var(--txt);font-weight:700;font-size:13px;cursor:pointer
-}
+.quick{flex:none;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}
+.chip{padding:9px 2px;border-radius:13px;border:1px dashed var(--line);min-width:0;background:transparent;
+  color:var(--txt);font-weight:700;font-size:13px;cursor:pointer}
 .chip:active{background:var(--chip)}
-.pad{flex:1;min-height:150px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:7px}
-.key{
-  border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:16px;
-  font-size:21px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)
-}
+.pad{flex:1;min-height:140px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:7px}
+.key{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:16px;
+  font-size:21px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
 .key:active{background:var(--chip);transform:scale(.97)}
 .key .ic-svg{margin:0 auto}
-.btn{
-  font-weight:800;font-size:16px;border:0;cursor:pointer;padding:14px 18px;
-  border-radius:16px;background:var(--accent);color:#fff;white-space:nowrap
-}
+.btn{font-weight:800;font-size:16px;border:0;cursor:pointer;padding:14px 18px;border-radius:16px;
+  background:var(--accent);color:#fff;white-space:nowrap}
 .btn:active{transform:scale(.98)}
 .btn.ghost{background:var(--chip);color:var(--txt)}
 .btn.danger{background:var(--danger)}
-.btn.block{width:100%;margin-top:10px;flex:none}
+.btn.block{width:100%;margin-top:8px;flex:none}
 .btn[disabled]{opacity:.5;cursor:default}
 
-/* ===== history ===== */
-.histhead{flex:none;display:flex;align-items:baseline;justify-content:space-between;padding:8px 4px}
-.histhead h2{font-size:16px;margin:0;font-weight:800}
-.histhead span{font-size:13px;color:var(--muted)}
-.list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+/* ---------- days screen ---------- */
+.dayhead{flex:none;display:flex;align-items:baseline;justify-content:space-between;padding:8px 4px 6px;gap:8px}
+.dayhead h2{font-size:16px;margin:0;font-weight:800}
+.dayhead span{font-size:12px;color:var(--muted);white-space:nowrap}
+.stats4{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.chartcard{flex:none;padding:12px 12px 8px;margin-bottom:10px}
+.chartlbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);
+  font-weight:600;margin-bottom:6px;gap:8px}
+.chartlbl b{font-weight:800;white-space:nowrap}
+.chart{width:100%;height:auto;display:block;touch-action:manipulation}
+.miniseg{display:flex;background:var(--chip);border-radius:11px;padding:3px;margin-bottom:8px}
+.miniseg button{flex:1;padding:7px;border:0;border-radius:8px;background:transparent;color:var(--muted);
+  font-weight:700;font-size:12px;cursor:pointer}
+.miniseg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
+.srcbar{display:flex;align-items:center;gap:9px;padding:7px 0}
+.srcbar .nm{font-size:13px;font-weight:700;width:74px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srcbar .track{flex:1;min-width:30px;height:10px;background:var(--chip);border-radius:999px;overflow:hidden}
+.srcbar .fill{display:block;height:100%;border-radius:999px}
+.srcbar .val{font-size:11px;font-weight:800;color:var(--muted);width:96px;text-align:right;flex:none;white-space:nowrap}
+.dayrow{display:flex;justify-content:space-between;align-items:baseline;padding:14px 4px 6px;
+  font-size:13px;font-weight:700;color:var(--muted)}
+.dayrow b{font-size:14px;color:var(--accent2)}
+.dayrow b.neg{color:var(--danger)}
 .item{display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line)}
 .item:last-child{border-bottom:0}
-.ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:16px;background:var(--chip);flex:none}
-.item .txt{flex:1;min-width:0}
+.ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--chip);flex:none}
+.item .txt{flex:1;min-width:0;text-align:left;background:none;border:0;color:inherit;font-family:inherit;cursor:pointer;padding:0}
 .item .t1{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .t2{font-size:12px;color:var(--muted);margin-top:2px}
 .amt{font-weight:900;font-size:15px;color:var(--accent2);white-space:nowrap}
 .amt.neg{color:var(--danger)}
-.del{border:0;background:transparent;color:var(--muted);font-size:16px;cursor:pointer;padding:6px}
-.empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px}
+.del{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:6px}
+.empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:14px}
 
-/* ===== settings ===== */
-.sec{margin-bottom:12px}
+/* ---------- settings ---------- */
 .sec h3{font-size:13px;color:var(--muted);font-weight:700;margin:14px 4px 8px;text-transform:uppercase;letter-spacing:.4px}
 label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:10px 2px 5px}
-.fld{width:100%;font-size:16px;padding:12px 13px;border-radius:13px;border:1px solid var(--line);background:var(--bg2);color:var(--txt);outline:none}
+.fld{width:100%;font-size:16px;padding:12px 13px;border-radius:13px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--txt);outline:none}
 .fld:focus{border-color:var(--accent)}
 .row2{display:flex;gap:9px}.row2>*{flex:1;min-width:0}
 .rowbtn{display:flex;gap:9px;margin-top:12px}.rowbtn>*{flex:1}
@@ -185,30 +193,49 @@ label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:10p
 .status{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;margin-bottom:4px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
 .dot.ok{background:var(--accent2)}.dot.warn{background:#f59e0b}.dot.err{background:var(--danger)}
-.danger-link{display:block;width:100%;text-align:center;margin:16px 0 8px;background:none;border:0;color:var(--danger);font-size:14px;font-weight:700;cursor:pointer}
+.danger-link{display:block;width:100%;text-align:center;margin:14px 0 6px;background:none;border:0;
+  color:var(--danger);font-size:14px;font-weight:700;cursor:pointer}
+.linkbtn{background:none;border:0;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;padding:8px 2px}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.listrow:last-child{border-bottom:0}
+.listrow .txt{flex:1;min-width:0;text-align:left;background:none;border:0;color:inherit;font-family:inherit;cursor:pointer;padding:0}
+.listrow .t1{font-weight:700;font-size:15px}
+.listrow .t2{font-size:12px;color:var(--muted);margin-top:2px}
+.mini{width:100%;height:5px;background:var(--chip);border-radius:999px;margin-top:6px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--accent);border-radius:999px}
 
-/* ===== onboarding ===== */
+/* ---------- sheets ---------- */
+.overlay{position:fixed;inset:0;background:rgba(8,10,20,.55);backdrop-filter:blur(3px);display:none;
+  align-items:flex-end;justify-content:center;z-index:50}
+.overlay.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:26px 26px 0 0;
+  padding:20px 18px calc(20px + env(safe-area-inset-bottom));animation:up .28s cubic-bezier(.2,.9,.2,1);
+  max-height:88vh;overflow-y:auto}
+@media(min-width:560px){.overlay{align-items:center}.sheet{border-radius:26px}}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet h3{margin:0 0 10px;font-size:18px}
+.sheetbtns{display:flex;gap:10px;margin-top:16px}
+.sheetbtns .btn{flex:1}
+
+/* ---------- onboarding ---------- */
 #onboard{position:fixed;inset:0;background:var(--bg);z-index:40;display:none;overflow-y:auto}
 #onboard.on{display:block}
 .obwrap{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 40px) 22px 40px}
 .obwrap .big{font-size:26px;font-weight:900;letter-spacing:-.5px;margin:0 0 6px}
 .obwrap p{color:var(--muted);font-size:15px;margin:0 0 18px;line-height:1.5}
 
-/* ===== toast ===== */
+/* ---------- toast ---------- */
 .toast{
   position:fixed;bottom:calc(env(safe-area-inset-bottom) + 84px);left:50%;
-  transform:translateX(-50%) translateY(70px);background:var(--txt);color:var(--bg);
-  padding:11px 17px;border-radius:999px;font-weight:700;font-size:14px;opacity:0;
-  transition:.3s;z-index:99;display:flex;gap:12px;align-items:center;max-width:92vw;
-  pointer-events:none                     /* never swallow a tap meant for the tab bar */
+  transform:translateX(-50%) translateY(70px);background:var(--txt);color:var(--bg);padding:11px 17px;
+  border-radius:999px;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:99;
+  display:flex;gap:12px;align-items:center;max-width:92vw;pointer-events:none
 }
-.toast button{pointer-events:auto}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.toast button{background:none;border:0;color:var(--accent2);font-weight:900;font-size:14px;cursor:pointer}
+.toast button{background:none;border:0;color:var(--accent2);font-weight:900;font-size:14px;cursor:pointer;pointer-events:auto}
 canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 </style>
-</head>
-<body>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <symbol id="i-goal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -224,6 +251,8 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6.5 7l.8 12a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1l.8-12"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 6H9.4a2 2 0 0 0-1.5.7L3 12l4.9 5.3a2 2 0 0 0 1.5.7H20a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="m12 10 4 4M16 10l-4 4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2.5 20.5 6 17 9.5M20.5 6H7a3.5 3.5 0 0 0-3.5 3.5V11M7 21.5 3.5 18 7 14.5M3.5 18H17a3.5 3.5 0 0 0 3.5-3.5V13"/></symbol>
 </defs></svg>
 
 <div id="app">
@@ -234,9 +263,12 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   </div>
 
   <main>
-    <!-- HOME -->
+    <!-- GOAL -->
     <section class="screen on" id="s-home">
-      <div class="goalname" id="goalName">My goal</div>
+      <button class="goalpick" id="goalPick">
+        <span id="goalName">My goal</span>
+        <svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-chev"/></svg>
+      </button>
       <div class="ringbox">
         <div class="ringwrap">
           <svg viewBox="0 0 212 212">
@@ -254,12 +286,13 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
         </div>
       </div>
       <div class="left" id="leftTxt"><b>$0</b> to go</div>
-      <div class="done-banner" id="doneBanner" style="display:none"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-check"/></svg><span>Goal reached — go buy it!</span></div>
+      <div class="done-banner" id="doneBanner" style="display:none">
+        <svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-check"/></svg><span>Goal reached — go buy it!</span></div>
       <div class="stats">
         <div class="stat"><div class="k">Today</div><div class="v" id="stToday">—</div></div>
         <div class="stat"><div class="k">Last 7 days</div><div class="v" id="stWeek">—</div></div>
-        <div class="stat"><div class="k">Weekly pace</div><div class="v" id="stRate">—</div></div>
-        <div class="stat"><div class="k">Est. finish</div><div class="v" id="stEta">—</div></div>
+        <div class="stat"><div class="k" id="kPace">Weekly pace</div><div class="v" id="stRate">—</div></div>
+        <div class="stat"><div class="k" id="kEta">Est. finish</div><div class="v" id="stEta">—</div></div>
       </div>
     </section>
 
@@ -270,13 +303,14 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
         <button data-mode="out"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-minus"/></svg>Money out</button>
       </div>
       <div class="amtbig zero" id="amtBig">$0</div>
-      <input class="note" id="noteInput" maxlength="40" placeholder="Where from? (allowance, work, gift…)">
+      <div class="srcrow" id="srcRow"></div>
+      <input class="note" id="noteInput" maxlength="40" placeholder="Note (optional)">
       <div class="quick" id="quick"></div>
       <div class="pad" id="pad"></div>
       <button class="btn block" id="addBtn">Add</button>
     </section>
 
-    <!-- HISTORY -->
+    <!-- DAYS -->
     <section class="screen scroll" id="s-hist">
       <div class="dayhead"><h2 id="todayName">Today</h2><span id="histCount"></span></div>
       <div class="stats4">
@@ -286,8 +320,16 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
         <div class="stat"><div class="k">Per day avg</div><div class="v" id="stPerDay">—</div></div>
       </div>
       <div class="card chartcard">
-        <div class="chartlbl"><span>Last 14 days</span><b id="chartTip">—</b></div>
-        <svg id="chart" viewBox="0 0 336 138" role="img" aria-label="Money in and out per day over the last 14 days"></svg>
+        <div class="miniseg" id="chartSeg">
+          <button data-c="daily" class="on">Per day</button>
+          <button data-c="total">Total so far</button>
+        </div>
+        <div class="chartlbl"><span id="chartName">Last 14 days</span><b id="chartTip">—</b></div>
+        <svg id="chart" class="chart" viewBox="0 0 336 138" role="img" aria-label="Savings chart"></svg>
+      </div>
+      <div class="card chartcard" id="srcCard">
+        <div class="chartlbl"><span>Where it came from</span><b id="srcTotal"></b></div>
+        <div id="srcBars"></div>
       </div>
       <div id="history"></div>
     </section>
@@ -295,24 +337,19 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
     <!-- SETTINGS -->
     <section class="screen scroll" id="s-set">
       <div class="sec">
-        <h3>Goal</h3>
+        <h3>Goals</h3>
         <div class="card">
-          <label for="gName">What you want to buy</label>
-          <input class="fld" id="gName" maxlength="40" placeholder="e.g. headphones, a bike, a flight">
-          <div class="row2">
-            <div>
-              <label for="gTarget">Price / target</label>
-              <input class="fld" id="gTarget" type="number" inputmode="decimal" min="1" step="any" placeholder="2000">
-            </div>
-            <div>
-              <label for="gCur">Currency</label>
-              <select class="fld" id="gCur">
-                <option value="₪">₪ Shekel</option><option value="$">$ Dollar</option>
-                <option value="€">€ Euro</option><option value="£">£ Pound</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn block" id="saveGoal">Save goal</button>
+          <div id="goalList"></div>
+          <button class="btn ghost block" id="newGoalBtn">New goal</button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>Money you expect</h3>
+        <div class="card">
+          <div id="incomeList"></div>
+          <button class="btn ghost block" id="newIncomeBtn">Add expected income</button>
+          <p class="hint">Tell the app what comes in regularly and the finish date is a plan, not a guess.</p>
         </div>
       </div>
 
@@ -329,7 +366,8 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
               <button class="btn ghost" id="signUpBtn">Create account</button>
               <button class="btn" id="signInBtn">Sign in</button>
             </div>
-            <p class="hint">Signing in copies this device's data to your account and pulls anything saved from another device. Everything keeps working offline — it syncs when you're back online.</p>
+            <button class="linkbtn" id="forgotBtn">Forgot password?</button>
+            <p class="hint">Signing in copies this device's data to your account and pulls anything saved elsewhere. Everything keeps working offline.</p>
           </div>
           <div id="acctBox" style="display:none">
             <div class="rowbtn">
@@ -344,7 +382,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
             <label for="anonKey">Supabase anon key</label>
             <input class="fld" id="anonKey" placeholder="paste the anon / publishable key">
             <button class="btn block" id="saveKeyBtn">Connect</button>
-            <p class="hint">Both are on the Supabase dashboard under Project Settings → API. The anon key is public by design — your rows are protected by row level security.</p>
+            <p class="hint">Both are on the Supabase dashboard under Project Settings → API. The anon key is public by design — rows are protected by row level security.</p>
           </div>
         </div>
       </div>
@@ -371,6 +409,111 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   </nav>
 </div>
 
+<!-- GOAL SWITCHER -->
+<div class="overlay" id="goalSheet">
+  <div class="sheet">
+    <h3>Your goals</h3>
+    <div id="goalPicker"></div>
+    <div class="sheetbtns">
+      <button class="btn ghost" data-close="goalSheet">Close</button>
+      <button class="btn" id="addGoalFromPicker">New goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL EDITOR -->
+<div class="overlay" id="goalEdit">
+  <div class="sheet">
+    <h3 id="goalEditTitle">Goal</h3>
+    <label for="geName">What you want to buy</label>
+    <input class="fld" id="geName" maxlength="40" placeholder="e.g. headphones, a bike, a flight">
+    <div class="row2">
+      <div>
+        <label for="geTarget">Price / target</label>
+        <input class="fld" id="geTarget" type="number" inputmode="decimal" min="1" step="any" placeholder="2000">
+      </div>
+      <div>
+        <label for="geCur">Currency</label>
+        <select class="fld" id="geCur">
+          <option value="₪">₪ Shekel</option><option value="$">$ Dollar</option>
+          <option value="€">€ Euro</option><option value="£">£ Pound</option>
+        </select>
+      </div>
+    </div>
+    <div class="sheetbtns">
+      <button class="btn ghost" data-close="goalEdit">Cancel</button>
+      <button class="btn" id="geSave">Save</button>
+    </div>
+    <button class="linkbtn" id="geComplete" style="width:100%">Mark as finished</button>
+    <button class="danger-link" id="geDelete">Delete this goal and its entries</button>
+  </div>
+</div>
+
+<!-- ENTRY EDITOR -->
+<div class="overlay" id="entryEdit">
+  <div class="sheet">
+    <h3>Edit entry</h3>
+    <div class="row2">
+      <div>
+        <label for="eeAmount">Amount</label>
+        <input class="fld" id="eeAmount" type="number" inputmode="decimal" step="any" placeholder="0">
+      </div>
+      <div>
+        <label for="eeDate">Date</label>
+        <input class="fld" id="eeDate" type="date">
+      </div>
+    </div>
+    <label for="eeSource">Source</label>
+    <select class="fld" id="eeSource"></select>
+    <label for="eeNote">Note</label>
+    <input class="fld" id="eeNote" maxlength="40" placeholder="Note (optional)">
+    <div class="sheetbtns">
+      <button class="btn ghost" data-close="entryEdit">Cancel</button>
+      <button class="btn" id="eeSave">Save</button>
+    </div>
+    <button class="danger-link" id="eeDelete">Delete this entry</button>
+  </div>
+</div>
+
+<!-- INCOME EDITOR -->
+<div class="overlay" id="incomeEdit">
+  <div class="sheet">
+    <h3>Expected income</h3>
+    <label for="ieLabel">What is it</label>
+    <input class="fld" id="ieLabel" maxlength="40" placeholder="e.g. allowance, salary">
+    <div class="row2">
+      <div>
+        <label for="ieAmount">Amount</label>
+        <input class="fld" id="ieAmount" type="number" inputmode="decimal" min="1" step="any" placeholder="50">
+      </div>
+      <div>
+        <label for="ieEvery">How often</label>
+        <select class="fld" id="ieEvery">
+          <option value="week">Every week</option>
+          <option value="month">Every month</option>
+        </select>
+      </div>
+    </div>
+    <div id="ieDowWrap">
+      <label for="ieDow">Day of the week</label>
+      <select class="fld" id="ieDow">
+        <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
+        <option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option>
+        <option value="6">Saturday</option>
+      </select>
+    </div>
+    <div id="ieDomWrap" style="display:none">
+      <label for="ieDom">Day of the month</label>
+      <input class="fld" id="ieDom" type="number" min="1" max="31" step="1" placeholder="1">
+    </div>
+    <div class="sheetbtns">
+      <button class="btn ghost" data-close="incomeEdit">Cancel</button>
+      <button class="btn" id="ieSave">Save</button>
+    </div>
+    <button class="danger-link" id="ieDelete">Remove</button>
+  </div>
+</div>
+
 <!-- ONBOARDING -->
 <div id="onboard">
   <div class="obwrap">
@@ -394,11 +537,11 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
     <label for="obStart">Money you already have (optional)</label>
     <input class="fld" id="obStart" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
     <button class="btn block" id="obStartBtn">Start saving</button>
-    <button class="danger-link" id="obSignIn" style="color:var(--accent)">Already have an account? Sign in</button>
+    <button class="linkbtn" id="obSignIn" style="width:100%">Already have an account? Sign in</button>
   </div>
 </div>
 
-<div class="toast" id="toast"><span id="toastTxt"></span><button id="undoBtn" style="display:none">Undo</button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastTxt"></span><button id="undoBtn" style="display:none">Undo</button></div>
 <canvas id="confetti"></canvas>
 
 <script src="config.js"></script>
@@ -407,6 +550,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 'use strict';
 const $ = s => document.querySelector(s);
 const DAY = 86400000;
+const SOURCES = ['Allowance','Work','Gift','Sold something','Other'];
 
 /* ============================================================
    local state — always the source of truth for what you see
@@ -415,20 +559,58 @@ const KEY = 'kupa.v1';                 // kept from the first version so old dat
 const SESS = 'stash.session';
 const KEYOVR = 'stash.anonkey';
 const URLOVR = 'stash.url';
-const def = { name:'', target:0, cur:'₪', entries:[], theme:'light', celebrated:false,
-              gUpdated:0, deleted:[] };
+const def = { v:2, goals:[], activeId:'', entries:[], incomes:[], theme:'light',
+              deleted:{ entries:[], goals:[], incomes:[] }, lastSync:0 };
+// declared as functions, not consts: load() runs before this point and uses them
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
+function esc(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
 let db = load();
 
 function load(){
-  try{ const r = JSON.parse(localStorage.getItem(KEY)); return r ? {...def, ...r} : {...def}; }
-  catch(e){ return {...def}; }
+  let raw = null;
+  try{ raw = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+  if(!raw) return clone(def);
+  if(raw.v === 2){
+    const d = { ...clone(def), ...raw };
+    d.deleted = { ...clone(def.deleted), ...(raw.deleted || {}) };
+    return d;
+  }
+  return migrateV1(raw);
 }
+
+// v1 held a single goal at the top level; wrap it as the first goal
+function migrateV1(r){
+  const d = clone(def);
+  d.theme = r.theme || 'light';
+  const gid = uid();
+  if(r.target > 0){
+    d.goals = [{ id:gid, name:r.name || 'My goal', target:r.target, cur:r.cur || '$',
+                 celebrated:!!r.celebrated, completedAt:null, createdAt:Date.now(),
+                 updatedAt:r.gUpdated || Date.now() }];
+    d.activeId = gid;
+  }
+  d.entries = (r.entries || []).map(e => ({
+    id:e.id || uid(), goalId:gid, amount:e.amount, note:e.note || '', source:'', ts:e.ts, updatedAt:e.ts }));
+  return d;
+}
+
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
 
-const fmt = n => db.cur + (Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
-const total = () => db.entries.reduce((s,e)=>s+e.amount,0);
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,9);
-const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---- goal helpers ---- */
+const goalById = id => db.goals.find(g => g.id === id);
+function active(){
+  let g = goalById(db.activeId);
+  if(!g) g = db.goals.find(x => !x.completedAt) || db.goals[0];
+  if(g && g.id !== db.activeId){ db.activeId = g.id; }
+  return g;
+}
+const cur = () => { const g = active(); return g ? g.cur : '$'; };
+const fmt = n => cur() + (Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
+const entriesOf = id => db.entries.filter(e => e.goalId === id);
+const sumOf = id => entriesOf(id).reduce((a,e) => a + e.amount, 0);
+const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
 
 /* ============================================================
    Supabase — plain REST, no SDK, so the app still opens offline
@@ -439,7 +621,7 @@ const baseUrl = () => (localStorage.getItem(URLOVR) || cfg.url || '').replace(/\
 const configured = () => !!(baseUrl() && anonKey());
 let session = null;
 try{ session = JSON.parse(localStorage.getItem(SESS)); }catch(e){}
-let syncing = false, syncErr = '', pendingT;
+let syncing = false, syncErr = '', pendingT = null;
 
 function setSession(s){
   session = s;
@@ -450,25 +632,23 @@ function setSession(s){
 async function api(path, opts = {}){
   const r = await fetch(baseUrl() + path, {
     ...opts,
-    headers: { 'apikey': anonKey(), 'Content-Type':'application/json', ...(opts.headers||{}) }
+    headers:{ 'apikey':anonKey(), 'Content-Type':'application/json', ...(opts.headers || {}) }
   });
   const txt = await r.text();
   const body = txt ? (() => { try{ return JSON.parse(txt); }catch(e){ return txt; } })() : null;
   if(!r.ok){
-    const msg = (body && (body.error_description || body.msg || body.message || body.error)) || ('HTTP ' + r.status);
-    throw new Error(msg);
+    throw new Error((body && (body.error_description || body.msg || body.message || body.error)) || ('HTTP ' + r.status));
   }
   return body;
 }
-
-const authApi = (p, payload) => api('/auth/v1' + p, { method:'POST', body: JSON.stringify(payload) });
+const authApi = (p, payload) => api('/auth/v1' + p, { method:'POST', body:JSON.stringify(payload) });
 
 function storeSession(s){
   if(!s || !s.access_token) return null;
   const out = {
-    access_token: s.access_token, refresh_token: s.refresh_token,
-    expires_at: Date.now() + ((s.expires_in || 3600) * 1000) - 60000,
-    email: (s.user && s.user.email) || (session && session.email) || ''
+    access_token:s.access_token, refresh_token:s.refresh_token,
+    expires_at:Date.now() + ((s.expires_in || 3600) * 1000) - 60000,
+    email:(s.user && s.user.email) || (session && session.email) || ''
   };
   setSession(out);
   return out;
@@ -477,7 +657,7 @@ function storeSession(s){
 async function freshToken(){
   if(!session) throw new Error('signed out');
   if(Date.now() < session.expires_at) return session.access_token;
-  const s = await authApi('/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+  const s = await authApi('/token?grant_type=refresh_token', { refresh_token:session.refresh_token });
   const out = storeSession(s);
   if(!out) throw new Error('could not refresh the session');
   return out.access_token;
@@ -485,53 +665,59 @@ async function freshToken(){
 
 async function rest(path, opts = {}){
   const token = await freshToken();
-  return api('/rest/v1' + path, {
-    ...opts,
-    headers: { 'Authorization': 'Bearer ' + token, ...(opts.headers||{}) }
-  });
+  return api('/rest/v1' + path, { ...opts, headers:{ 'Authorization':'Bearer ' + token, ...(opts.headers || {}) } });
 }
 
-/* push what is local, then take the server's copy as the merged truth */
-async function sync(reason){
+const toRow = {
+  goals: g => ({ id:g.id, name:g.name, target:g.target, currency:g.cur, celebrated:!!g.celebrated,
+                 completed_at:g.completedAt ? new Date(g.completedAt).toISOString() : null }),
+  entries: e => ({ id:e.id, goal_id:e.goalId, amount:e.amount, note:e.note || '', source:e.source || '',
+                   ts:new Date(e.ts).toISOString() }),
+  incomes: i => ({ id:i.id, label:i.label, amount:i.amount, every:i.every,
+                   dow:i.every === 'week' ? i.dow : null, dom:i.every === 'month' ? i.dom : null, active:i.active !== false })
+};
+const fromRow = {
+  goals: r => ({ id:r.id, name:r.name, target:Number(r.target), cur:r.currency, celebrated:r.celebrated,
+                 completedAt:r.completed_at ? new Date(r.completed_at).getTime() : null,
+                 createdAt:new Date(r.created_at).getTime(), updatedAt:new Date(r.updated_at).getTime() }),
+  entries: r => ({ id:r.id, goalId:r.goal_id, amount:Number(r.amount), note:r.note || '', source:r.source || '',
+                   ts:new Date(r.ts).getTime(), updatedAt:new Date(r.updated_at).getTime() }),
+  incomes: r => ({ id:r.id, label:r.label, amount:Number(r.amount), every:r.every, dow:r.dow, dom:r.dom,
+                   active:r.active, updatedAt:new Date(r.updated_at).getTime() })
+};
+const TABLES = [['goals','stash_goals'], ['entries','stash_entries'], ['incomes','stash_incomes']];
+
+/* push what changed here, then take the server's copy as the merged truth */
+async function sync(){
   if(!configured() || !session || syncing) return;
   if(!navigator.onLine){ syncErr = 'offline'; paintSync(); return; }
   syncing = true; syncErr = ''; paintSync();
+  const since = db.lastSync || 0;
   try{
-    // 1. deletions made while offline
-    for(const id of [...db.deleted]){
-      await rest('/stash_entries?id=eq.' + encodeURIComponent(id), { method:'DELETE' });
-      db.deleted = db.deleted.filter(x => x !== id);
-      save();
+    for(const [key, table] of TABLES){
+      for(const id of [...(db.deleted[key] || [])]){
+        await rest('/' + table + '?id=eq.' + encodeURIComponent(id), { method:'DELETE' });
+        db.deleted[key] = db.deleted[key].filter(x => x !== id);
+        save();
+      }
     }
-    // 2. local entries up
-    if(db.entries.length){
-      await rest('/stash_entries?on_conflict=user_id,id', {
-        method:'POST',
-        headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(db.entries.map(e => ({
-          id:e.id, amount:e.amount, note:e.note || '', ts:new Date(e.ts).toISOString()
-        })))
-      });
+    // goals first: entries carry a foreign key to them
+    for(const [key, table] of TABLES){
+      const changed = db[key].filter(r => (r.updatedAt || 0) > since);
+      if(changed.length){
+        await rest('/' + table + '?on_conflict=user_id,id', {
+          method:'POST',
+          headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
+          body:JSON.stringify(changed.map(toRow[key]))
+        });
+      }
     }
-    // 3. goal — newer side wins
-    const remote = await rest('/stash_goals?select=*&limit=1');
-    const rg = remote && remote[0];
-    const rTime = rg ? new Date(rg.updated_at).getTime() : 0;
-    if(db.target && db.gUpdated >= rTime){
-      await rest('/stash_goals?on_conflict=user_id', {
-        method:'POST',
-        headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ name: db.name || 'My goal', target: db.target, currency: db.cur, celebrated: !!db.celebrated })
-      });
-    } else if(rg){
-      db.name = rg.name; db.target = Number(rg.target); db.cur = rg.currency;
-      db.celebrated = rg.celebrated; db.gUpdated = rTime;
+    for(const [key, table] of TABLES){
+      const rows = await rest('/' + table + '?select=*');
+      db[key] = (rows || []).map(fromRow[key]);
     }
-    // 4. pull the merged set back down
-    const rows = await rest('/stash_entries?select=id,amount,note,ts&order=ts.desc');
-    db.entries = (rows || []).map(r => ({ id:r.id, amount:Number(r.amount), note:r.note || '', ts:new Date(r.ts).getTime() }));
     db.lastSync = Date.now();
-    if(db.target) obDismissed = false;      // a goal arrived from the account
+    if(db.goals.length) obDismissed = false;
     save(); render(); onboardCheck();
   }catch(e){
     syncErr = e.message || 'sync failed';
@@ -539,18 +725,63 @@ async function sync(reason){
     syncing = false; paintSync();
   }
 }
-const syncSoon = () => { clearTimeout(pendingT); pendingT = setTimeout(() => sync('change'), 900); };
-addEventListener('online', () => sync('online'));
+const syncSoon = () => { clearTimeout(pendingT); pendingT = setTimeout(sync, 900); };
+
+/* ---- staying current: realtime when it connects, polling as the safety net ---- */
+let ws = null, wsBeat = null, wsRef = 0, poll = null;
+
+function liveConnect(){
+  if(ws || !session || !configured() || !('WebSocket' in window)) return;
+  let url;
+  try{ url = new URL(baseUrl()); }catch(e){ return; }
+  url.protocol = url.protocol === 'http:' ? 'ws:' : 'wss:';
+  url.pathname = '/realtime/v1/websocket';
+  url.search = '?apikey=' + encodeURIComponent(anonKey()) + '&vsn=1.0.0';
+  try{ ws = new WebSocket(url.toString()); }catch(e){ return; }
+
+  ws.onopen = async () => {
+    let token = '';
+    try{ token = await freshToken(); }catch(e){}
+    const send = (event, payload) => ws.readyState === 1 &&
+      ws.send(JSON.stringify({ topic:'realtime:stash', event, payload, ref:String(++wsRef) }));
+    send('phx_join', {
+      config:{ postgres_changes:TABLES.map(([, table]) => ({ event:'*', schema:'public', table })) },
+      access_token:token
+    });
+    wsBeat = setInterval(() => ws && ws.readyState === 1 &&
+      ws.send(JSON.stringify({ topic:'phoenix', event:'heartbeat', payload:{}, ref:String(++wsRef) })), 25000);
+  };
+  ws.onmessage = m => {
+    let d; try{ d = JSON.parse(m.data); }catch(e){ return; }
+    if(d.event === 'postgres_changes') syncSoon();
+  };
+  ws.onclose = () => {
+    ws = null; clearInterval(wsBeat); wsBeat = null;
+    if(session) setTimeout(liveConnect, 5000);
+  };
+  ws.onerror = () => { try{ ws && ws.close(); }catch(e){} };
+}
+function liveStop(){
+  clearInterval(wsBeat); wsBeat = null;
+  if(ws){ const s = ws; ws = null; try{ s.onclose = null; s.close(); }catch(e){} }
+}
+function startPolling(){
+  clearInterval(poll);
+  poll = setInterval(() => { if(document.visibilityState === 'visible' && session) sync(); }, 30000);
+}
+addEventListener('online', sync);
+addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && session) sync(); });
+addEventListener('focus', () => { if(session) sync(); });
 
 function paintSync(){
   const dot = $('#syncDot'), st = $('#syncState'), pill = $('#syncPill');
   let cls = '', txt, short;
-  if(!configured()){ cls=''; txt = 'Saved on this device only — no key set'; short = 'Local only'; }
-  else if(!session){ cls=''; txt = 'Saved on this device only'; short = 'Local only'; }
-  else if(syncing){ cls='warn'; txt = 'Syncing…'; short = 'Syncing…'; }
-  else if(syncErr === 'offline'){ cls='warn'; txt = 'Offline — will sync when you\'re back'; short = 'Offline'; }
-  else if(syncErr){ cls='err'; txt = 'Sync problem: ' + syncErr; short = 'Sync issue'; }
-  else { cls='ok'; txt = 'Synced' + (db.lastSync ? ' · ' + when(db.lastSync) : ''); short = 'Synced'; }
+  if(!configured()){ txt = 'Saved on this device only — not connected'; short = 'Local only'; }
+  else if(!session){ txt = 'Saved on this device only'; short = 'Local only'; }
+  else if(syncing){ cls = 'warn'; txt = 'Syncing…'; short = 'Syncing…'; }
+  else if(syncErr === 'offline'){ cls = 'warn'; txt = "Offline — will sync when you're back"; short = 'Offline'; }
+  else if(syncErr){ cls = 'err'; txt = 'Sync problem: ' + syncErr; short = 'Sync issue'; }
+  else { cls = 'ok'; txt = 'Synced' + (db.lastSync ? ' · ' + when(db.lastSync) : ''); short = 'Synced'; }
   dot.className = 'dot ' + cls;
   st.textContent = txt;
   pill.querySelector('use').setAttribute('href', session && !syncErr ? '#i-cloud' : '#i-phone');
@@ -558,7 +789,7 @@ function paintSync(){
   $('#authBox').style.display = (configured() && !session) ? '' : 'none';
   $('#acctBox').style.display = session ? '' : 'none';
   $('#keyBox').style.display  = configured() ? 'none' : '';
-  if(!configured()){ $('#projUrl').value = $('#projUrl').value || baseUrl(); }
+  if(!configured() && !$('#projUrl').value) $('#projUrl').value = baseUrl();
   if(session) $('#acctHint').textContent = 'Signed in as ' + (session.email || 'your account') + '.';
 }
 
@@ -577,43 +808,54 @@ async function auth(kind){
   const email = $('#email').value.trim(), password = $('#pass').value;
   if(!email || password.length < 6){ toast('Email and a password of 6+ characters'); return; }
   const btn = kind === 'up' ? $('#signUpBtn') : $('#signInBtn');
-  btn.disabled = true; btn.textContent = '…';
+  btn.disabled = true;
   try{
     const res = await authApi(kind === 'up' ? '/signup' : '/token?grant_type=password', { email, password });
     if(res && res.access_token){
       storeSession({ ...res, user:{ email } });
       $('#pass').value = '';
       toast(kind === 'up' ? 'Account created' : 'Signed in');
-      await sync('auth');
+      await sync();
+      liveConnect();
     } else {
-      // sign-up with email confirmation switched on returns a user but no session
       toast('Check your email to confirm, then sign in');
     }
   }catch(e){
     toast(e.message || 'Could not sign in');
   }finally{
     btn.disabled = false;
-    $('#signUpBtn').textContent = 'Create account'; $('#signInBtn').textContent = 'Sign in';
   }
 }
 $('#signUpBtn').onclick = () => auth('up');
 $('#signInBtn').onclick = () => auth('in');
-$('#syncNowBtn').onclick = () => sync('manual');
+$('#forgotBtn').onclick = async () => {
+  const email = $('#email').value.trim();
+  if(!email){ toast('Type your email first'); $('#email').focus(); return; }
+  try{
+    await authApi('/recover', { email });
+    toast('Reset link sent — check your email');
+  }catch(e){ toast(e.message || 'Could not send the reset link'); }
+};
+$('#syncNowBtn').onclick = sync;
 $('#signOutBtn').onclick = () => {
-  setSession(null); syncErr = '';
+  liveStop(); setSession(null); syncErr = '';
   toast('Signed out — data stays on this device');
 };
 
 /* ============================================================
-   navigation
+   navigation & sheets
    ============================================================ */
 function go(scr){
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 's-' + scr));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.scr === scr));
-  if(scr === 'set'){ $('#gName').value = db.name; $('#gTarget').value = db.target || ''; $('#gCur').value = db.cur; }
   if(scr === 'add') resetPad();
 }
 $('#tabs').onclick = e => { const b = e.target.closest('.tab'); if(b) go(b.dataset.scr); };
+
+const openSheet = id => $('#' + id).classList.add('open');
+const closeSheet = id => $('#' + id).classList.remove('open');
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
+document.querySelectorAll('.overlay').forEach(o => o.onclick = e => { if(e.target === o) o.classList.remove('open'); });
 
 /* ============================================================
    theme
@@ -623,53 +865,111 @@ function applyTheme(){
   $('#themeBtn').querySelector('use').setAttribute('href', db.theme === 'dark' ? '#i-sun' : '#i-moon');
   document.querySelector('meta[name=theme-color]').content = db.theme === 'dark' ? '#0f1220' : '#f4f6fb';
 }
-$('#themeBtn').onclick = () => { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); };
+$('#themeBtn').onclick = () => { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderCharts(); };
 
 /* ============================================================
-   goal
+   goals
    ============================================================ */
-function setGoal(name, target, cur){
-  db.name = name || 'My goal'; db.target = target; db.cur = cur;
-  db.gUpdated = Date.now();
-  if(total() < db.target) db.celebrated = false;
-  save(); render(); syncSoon();
-}
-$('#saveGoal').onclick = () => {
-  const t = parseFloat($('#gTarget').value);
-  if(!(t > 0)){ toast('Target must be more than zero'); $('#gTarget').focus(); return; }
-  setGoal($('#gName').value.trim(), t, $('#gCur').value);
-  toast('Goal saved');
-};
-$('#obStartBtn').onclick = () => {
-  const t = parseFloat($('#obTarget').value);
-  if(!(t > 0)){ toast('Enter a price above zero'); $('#obTarget').focus(); return; }
-  setGoal($('#obName').value.trim(), t, $('#obCur').value);
-  const st = parseFloat($('#obStart').value);
-  if(st > 0) addEntry(st, 'Starting amount');
-  onboardCheck(); go('home');
-};
-let obDismissed = false;
-const onboardCheck = () => $('#onboard').classList.toggle('on', !db.target && !obDismissed);
-$('#obSignIn').onclick = () => { obDismissed = true; onboardCheck(); go('set'); $('#email').focus(); };
+let editingGoal = null;
 
-$('#resetAll').onclick = () => {
-  if(!confirm('Delete your goal and all history? This cannot be undone.')) return;
-  const th = db.theme; obDismissed = false;
-  if(session) db.deleted = db.entries.map(e => e.id);
-  const keepDeleted = db.deleted;
-  db = { ...def, theme: th, deleted: keepDeleted };
-  save(); render(); onboardCheck(); syncSoon();
+function newGoal(name, target, currency){
+  const g = { id:uid(), name:name || 'My goal', target, cur:currency, celebrated:false,
+              completedAt:null, createdAt:Date.now(), updatedAt:Date.now() };
+  db.goals.push(g); db.activeId = g.id;
+  save(); render(); syncSoon();
+  return g;
+}
+
+function openGoalEditor(g){
+  editingGoal = g;
+  $('#goalEditTitle').textContent = g ? 'Edit goal' : 'New goal';
+  $('#geName').value = g ? g.name : '';
+  $('#geTarget').value = g ? g.target : '';
+  $('#geCur').value = g ? g.cur : cur();
+  $('#geComplete').style.display = g && !g.completedAt ? '' : 'none';
+  $('#geDelete').style.display = g ? '' : 'none';
+  openSheet('goalEdit');
+}
+$('#geSave').onclick = () => {
+  const t = parseFloat($('#geTarget').value);
+  if(!(t > 0)){ toast('Target must be more than zero'); $('#geTarget').focus(); return; }
+  const name = $('#geName').value.trim(), c = $('#geCur').value;
+  if(editingGoal){
+    Object.assign(editingGoal, { name:name || 'My goal', target:t, cur:c, updatedAt:Date.now() });
+    if(sumOf(editingGoal.id) < t) editingGoal.celebrated = false;
+    save(); render(); syncSoon();
+  } else {
+    newGoal(name, t, c);
+  }
+  closeSheet('goalEdit'); closeSheet('goalSheet'); toast('Saved');
 };
+$('#geComplete').onclick = () => {
+  if(!editingGoal) return;
+  editingGoal.completedAt = Date.now(); editingGoal.updatedAt = Date.now();
+  const next = db.goals.find(g => !g.completedAt);
+  db.activeId = next ? next.id : '';
+  save(); render(); onboardCheck(); syncSoon();
+  closeSheet('goalEdit'); closeSheet('goalSheet'); toast('Marked as finished');
+};
+$('#geDelete').onclick = () => {
+  if(!editingGoal) return;
+  if(!confirm('Delete "' + editingGoal.name + '" and every entry in it?')) return;
+  const gid = editingGoal.id;
+  db.entries.filter(e => e.goalId === gid).forEach(e => db.deleted.entries.push(e.id));
+  db.entries = db.entries.filter(e => e.goalId !== gid);
+  db.goals = db.goals.filter(g => g.id !== gid);
+  db.deleted.goals.push(gid);
+  if(db.activeId === gid) db.activeId = '';
+  save(); render(); onboardCheck(); syncSoon();
+  closeSheet('goalEdit'); closeSheet('goalSheet'); toast('Goal deleted');
+};
+
+$('#goalPick').onclick = () => { renderGoalPicker(); openSheet('goalSheet'); };
+$('#addGoalFromPicker').onclick = () => openGoalEditor(null);
+$('#newGoalBtn').onclick = () => openGoalEditor(null);
+
+function goalRow(g, withEdit){
+  const sum = sumOf(g.id), pct = Math.min(100, Math.max(0, sum / g.target * 100));
+  const done = g.completedAt || sum >= g.target;
+  return `<div class="listrow">
+      <button class="txt" data-goal="${g.id}">
+        <div class="t1">${esc(g.name)}${g.completedAt ? ' · finished' : ''}</div>
+        <div class="t2">${g.cur}${(Math.round(sum*100)/100).toLocaleString('en-US')} of ${g.cur}${g.target.toLocaleString('en-US')} · ${pct.toFixed(0)}%</div>
+        <div class="mini"><i style="width:${pct}%;background:${done ? 'var(--accent2)' : 'var(--accent)'}"></i></div>
+      </button>
+      ${withEdit ? `<button class="del" data-edit="${g.id}" aria-label="Edit goal">
+        <svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-set"/></svg></button>` : ''}
+    </div>`;
+}
+function renderGoalPicker(){
+  const open = db.goals.filter(g => !g.completedAt), done = db.goals.filter(g => g.completedAt);
+  $('#goalPicker').innerHTML =
+    (open.map(g => goalRow(g, true)).join('') || '<div class="empty">No goals yet.</div>') +
+    (done.length ? '<h3 style="margin-top:16px;font-size:14px">Finished</h3>' + done.map(g => goalRow(g, true)).join('') : '');
+}
+function pickerClick(e){
+  const pick = e.target.closest('[data-goal]');
+  if(pick){
+    db.activeId = pick.dataset.goal; save(); render();
+    closeSheet('goalSheet'); go('home'); return;
+  }
+  const ed = e.target.closest('[data-edit]');
+  if(ed) openGoalEditor(goalById(ed.dataset.edit));
+}
+$('#goalPicker').onclick = pickerClick;
+$('#goalList').onclick = pickerClick;
 
 /* ============================================================
    entries
    ============================================================ */
-function addEntry(amount, note){
-  const before = total();
-  db.entries.push({ id: uid(), amount, note: note || '', ts: Date.now() });
+function addEntry(amount, note, source){
+  const g = active(); if(!g) return;
+  const before = sumOf(g.id);
+  db.entries.push({ id:uid(), goalId:g.id, amount, note:note || '', source:source || '',
+                    ts:Date.now(), updatedAt:Date.now() });
   save(); render(); syncSoon();
-  if(before < db.target && total() >= db.target && !db.celebrated){
-    db.celebrated = true; db.gUpdated = Date.now(); save(); confetti(); toast('Goal reached!'); go('home');
+  if(before < g.target && sumOf(g.id) >= g.target && !g.celebrated){
+    g.celebrated = true; g.updatedAt = Date.now(); save(); confetti(); toast('Goal reached!'); go('home');
   } else {
     toast((amount > 0 ? 'Added ' : 'Took out ') + fmt(Math.abs(amount)));
   }
@@ -677,32 +977,135 @@ function addEntry(amount, note){
 function removeEntry(id){
   const i = db.entries.findIndex(e => e.id === id); if(i < 0) return;
   const [gone] = db.entries.splice(i,1);
-  db.deleted.push(id);
+  db.deleted.entries.push(id);
   save(); render(); syncSoon();
   toast('Deleted', () => {
+    gone.updatedAt = Date.now();
     db.entries.splice(i,0,gone);
-    db.deleted = db.deleted.filter(x => x !== gone.id);
+    db.deleted.entries = db.deleted.entries.filter(x => x !== gone.id);
     save(); render(); syncSoon();
   });
 }
-$('#history').onclick = e => { const b = e.target.closest('.del'); if(b) removeEntry(b.dataset.id); };
+
+let editingEntry = null;
+function openEntryEditor(id){
+  const e = db.entries.find(x => x.id === id); if(!e) return;
+  editingEntry = e;
+  $('#eeAmount').value = e.amount;
+  $('#eeDate').value = dayKey(e.ts);
+  $('#eeNote').value = e.note || '';
+  const opts = [''].concat(sourceList());
+  $('#eeSource').innerHTML = opts.map(s =>
+    `<option value="${esc(s)}"${s === (e.source || '') ? ' selected' : ''}>${s ? esc(s) : 'No source'}</option>`).join('');
+  openSheet('entryEdit');
+}
+$('#eeSave').onclick = () => {
+  if(!editingEntry) return;
+  const v = parseFloat($('#eeAmount').value);
+  if(!v){ toast('Amount cannot be zero'); return; }
+  const [y,m,d] = $('#eeDate').value.split('-').map(Number);
+  const old = new Date(editingEntry.ts);
+  const ts = (y && m && d) ? new Date(y, m-1, d, old.getHours(), old.getMinutes()).getTime() : editingEntry.ts;
+  Object.assign(editingEntry, { amount:v, ts, note:$('#eeNote').value.trim(),
+                                source:$('#eeSource').value, updatedAt:Date.now() });
+  save(); render(); syncSoon(); closeSheet('entryEdit'); toast('Entry updated');
+};
+$('#eeDelete').onclick = () => {
+  if(!editingEntry) return;
+  const id = editingEntry.id;
+  closeSheet('entryEdit');
+  removeEntry(id);
+};
+$('#history').onclick = e => {
+  const del = e.target.closest('.del');
+  if(del){ removeEntry(del.dataset.id); return; }
+  const row = e.target.closest('[data-entry]');
+  if(row) openEntryEditor(row.dataset.entry);
+};
 
 /* ============================================================
-   add screen: keypad
+   expected income
    ============================================================ */
-let mode = 'in', buf = '';
+let editingIncome = null;
+function openIncomeEditor(inc){
+  editingIncome = inc;
+  $('#ieLabel').value = inc ? inc.label : '';
+  $('#ieAmount').value = inc ? inc.amount : '';
+  $('#ieEvery').value = inc ? inc.every : 'week';
+  $('#ieDow').value = inc && inc.dow != null ? inc.dow : 5;
+  $('#ieDom').value = inc && inc.dom != null ? inc.dom : 1;
+  $('#ieDelete').style.display = inc ? '' : 'none';
+  everyChanged();
+  openSheet('incomeEdit');
+}
+function everyChanged(){
+  const wk = $('#ieEvery').value === 'week';
+  $('#ieDowWrap').style.display = wk ? '' : 'none';
+  $('#ieDomWrap').style.display = wk ? 'none' : '';
+}
+$('#ieEvery').onchange = everyChanged;
+$('#newIncomeBtn').onclick = () => openIncomeEditor(null);
+$('#ieSave').onclick = () => {
+  const amt = parseFloat($('#ieAmount').value);
+  if(!(amt > 0)){ toast('Amount must be more than zero'); return; }
+  const every = $('#ieEvery').value;
+  const data = { label:$('#ieLabel').value.trim() || 'Income', amount:amt, every,
+                 dow:every === 'week' ? Number($('#ieDow').value) : null,
+                 dom:every === 'month' ? Math.min(31, Math.max(1, Number($('#ieDom').value) || 1)) : null,
+                 active:true, updatedAt:Date.now() };
+  if(editingIncome) Object.assign(editingIncome, data);
+  else db.incomes.push({ id:uid(), ...data });
+  save(); render(); syncSoon(); closeSheet('incomeEdit'); toast('Saved');
+};
+$('#ieDelete').onclick = () => {
+  if(!editingIncome) return;
+  db.incomes = db.incomes.filter(i => i.id !== editingIncome.id);
+  db.deleted.incomes.push(editingIncome.id);
+  save(); render(); syncSoon(); closeSheet('incomeEdit'); toast('Removed');
+};
+$('#incomeList').onclick = e => {
+  const row = e.target.closest('[data-income]');
+  if(row) openIncomeEditor(db.incomes.find(i => i.id === row.dataset.income));
+};
+
+const DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const ordinal = n => n + (['th','st','nd','rd'][(n % 100 - 20) % 10] || ['th','st','nd','rd'][n % 100] || 'th');
+// what the declared incomes are worth per day
+function plannedPerDay(){
+  return db.incomes.filter(i => i.active !== false)
+    .reduce((a,i) => a + (i.every === 'week' ? i.amount / 7 : i.amount / 30.44), 0);
+}
+
+/* ============================================================
+   add screen
+   ============================================================ */
+let mode = 'in', buf = '', source = '';
 $('#seg').onclick = e => {
   const b = e.target.closest('button'); if(!b) return;
   mode = b.dataset.mode;
   [...$('#seg').children].forEach(x => x.classList.toggle('on', x === b));
   $('#addBtn').className = 'btn block' + (mode === 'out' ? ' danger' : '');
   $('#addBtn').textContent = mode === 'out' ? 'Take out' : 'Add';
+  paintAmt();
+};
+function sourceList(){
+  const used = [...new Set(db.entries.map(e => e.source).filter(Boolean))];
+  return [...new Set([...SOURCES, ...used])];
+}
+function renderSources(){
+  $('#srcRow').innerHTML = sourceList()
+    .map(s => `<button class="src${s === source ? ' on' : ''}" data-src="${esc(s)}">${esc(s)}</button>`).join('');
+}
+$('#srcRow').onclick = e => {
+  const b = e.target.closest('.src'); if(!b) return;
+  source = (source === b.dataset.src) ? '' : b.dataset.src;
+  renderSources();
 };
 const QUICK = [20,50,100,200,500];
 $('#quick').innerHTML = QUICK.map(v => `<button class="chip" data-v="${v}">+${v}</button>`).join('');
 $('#quick').onclick = e => {
   const b = e.target.closest('.chip'); if(!b) return;
-  buf = String((parseFloat(buf || '0') + parseFloat(b.dataset.v)));
+  buf = String(parseFloat(buf || '0') + parseFloat(b.dataset.v));
   paintAmt();
 };
 $('#pad').innerHTML = ['1','2','3','4','5','6','7','8','9','.','0','back']
@@ -725,21 +1128,44 @@ function resetPad(){ buf = ''; paintAmt(); }
 $('#addBtn').onclick = () => {
   const v = parseFloat(buf || '0');
   if(!(v > 0)){ toast('Enter an amount'); return; }
-  addEntry(v * (mode === 'in' ? 1 : -1), $('#noteInput').value.trim());
+  addEntry(v * (mode === 'in' ? 1 : -1), $('#noteInput').value.trim(), source);
   buf = ''; $('#noteInput').value = ''; paintAmt();
 };
 addEventListener('keydown', e => {
-  if(!$('#s-add').classList.contains('on') || e.target.tagName === 'INPUT') return;
+  if(!$('#s-add').classList.contains('on') || e.target.tagName === 'INPUT' || document.querySelector('.overlay.open')) return;
   if(/^[0-9]$/.test(e.key) || e.key === '.'){ buf = (buf === '0' ? '' : buf) + e.key; paintAmt(); }
   else if(e.key === 'Backspace'){ buf = buf.slice(0,-1); paintAmt(); }
   else if(e.key === 'Enter') $('#addBtn').click();
 });
 
 /* ============================================================
-   backup
+   onboarding / reset / backup
    ============================================================ */
+let obDismissed = false;
+const onboardCheck = () => $('#onboard').classList.toggle('on', !db.goals.some(g => !g.completedAt) && !obDismissed);
+$('#obSignIn').onclick = () => { obDismissed = true; onboardCheck(); go('set'); $('#email').focus(); };
+$('#obStartBtn').onclick = () => {
+  const t = parseFloat($('#obTarget').value);
+  if(!(t > 0)){ toast('Enter a price above zero'); $('#obTarget').focus(); return; }
+  newGoal($('#obName').value.trim(), t, $('#obCur').value);
+  const st = parseFloat($('#obStart').value);
+  if(st > 0) addEntry(st, 'Starting amount', '');
+  obDismissed = false; onboardCheck(); go('home');
+};
+$('#resetAll').onclick = () => {
+  if(!confirm('Delete every goal and all history? This cannot be undone.')) return;
+  const th = db.theme, del = db.deleted;
+  if(session){
+    db.entries.forEach(e => del.entries.push(e.id));
+    db.goals.forEach(g => del.goals.push(g.id));
+    db.incomes.forEach(i => del.incomes.push(i.id));
+  }
+  db = { ...clone(def), theme:th, deleted:del };
+  obDismissed = false;
+  save(); render(); onboardCheck(); syncSoon();
+};
 $('#exportBtn').onclick = () => {
-  const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(db,null,2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'stash-backup-' + new Date().toISOString().slice(0,10) + '.json';
@@ -752,9 +1178,12 @@ $('#importFile').onchange = e => {
   rd.onload = () => {
     try{
       const d = JSON.parse(rd.result);
-      if(!Array.isArray(d.entries)) throw new Error('bad file');
-      db = { ...def, ...d, theme: db.theme };
-      db.gUpdated = Date.now();
+      const next = d.v === 2 ? { ...clone(def), ...d } : migrateV1(d);
+      if(!Array.isArray(next.entries) || !Array.isArray(next.goals)) throw new Error('bad file');
+      next.theme = db.theme;
+      const now = Date.now();
+      ['goals','entries','incomes'].forEach(k => next[k].forEach(r => r.updatedAt = now));
+      db = next;
       save(); render(); onboardCheck(); syncSoon(); toast('Backup loaded');
     }catch(err){ toast('That file is not a Stash backup'); }
   };
@@ -783,15 +1212,23 @@ const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pa
 const keyToDate = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
 const todayKey = () => dayKey(Date.now());
 
+function when(ts){
+  const d = new Date(ts), now = new Date();
+  const dd = Math.floor((now.setHours(0,0,0,0) - new Date(ts).setHours(0,0,0,0)) / DAY);
+  const time = d.toLocaleTimeString('en-US',{ hour:'numeric', minute:'2-digit' });
+  if(dd === 0) return 'Today, ' + time;
+  if(dd === 1) return 'Yesterday, ' + time;
+  if(dd < 7) return dd + ' days ago';
+  return d.toLocaleDateString('en-US',{ day:'numeric', month:'long' });
+}
 function dayLabel(k){
   if(k === todayKey()) return 'Today';
   if(k === dayKey(Date.now() - DAY)) return 'Yesterday';
   return keyToDate(k).toLocaleDateString('en-US',{ weekday:'short', month:'short', day:'numeric' });
 }
-
-function byDay(){
+function byDay(list){
   const m = new Map();
-  db.entries.forEach(e => {
+  list.forEach(e => {
     const k = dayKey(e.ts);
     const g = m.get(k) || { net:0, in:0, out:0, items:[] };
     g.net += e.amount;
@@ -801,8 +1238,6 @@ function byDay(){
   });
   return m;
 }
-
-// days in a row, ending today or yesterday, where money came in
 function streakOf(map){
   let t = new Date(); t.setHours(0,0,0,0); t = t.getTime();
   if(!((map.get(dayKey(t)) || {}).in > 0)) t -= DAY;
@@ -811,7 +1246,31 @@ function streakOf(map){
   return n;
 }
 
-/* ---- 14-day chart: bars up for money in, down for money out ---- */
+/* ---- pace and finish dates ---- */
+function paces(g){
+  const es = entriesOf(g.id), sum = sumOf(g.id), left = g.target - sum;
+  const first = es.length ? Math.min(...es.map(e => e.ts)) : 0;
+  const allDays = first ? (Date.now() - first) / DAY : 0;
+  const paceAll = allDays >= 1 ? sum / allDays : 0;
+  const recentDays = Math.min(14, allDays);
+  const recentSum = es.filter(e => e.ts >= Date.now() - 14*DAY).reduce((a,e) => a + e.amount, 0);
+  const pace14 = recentDays >= 1 ? recentSum / recentDays : 0;
+  return { left, paceAll, pace14, planned:plannedPerDay(), allDays };
+}
+const etaDate = (left, perDay) => perDay > 0 ? new Date(Date.now() + Math.ceil(left/perDay) * DAY) : null;
+const shortDate = d => d.toLocaleDateString('en-US',{ day:'numeric', month:'short' });
+
+/* ============================================================
+   charts
+   ============================================================ */
+let chartMode = 'daily';
+$('#chartSeg').onclick = e => {
+  const b = e.target.closest('button'); if(!b) return;
+  chartMode = b.dataset.c;
+  [...$('#chartSeg').children].forEach(x => x.classList.toggle('on', x === b));
+  renderCharts();
+};
+
 function barPath(x, w, y0, y1, r){
   const h = Math.abs(y1 - y0), rr = Math.max(0, Math.min(r, w/2, h));
   return y1 < y0
@@ -819,12 +1278,12 @@ function barPath(x, w, y0, y1, r){
     : `M${x} ${y0} V${y1-rr} a${rr} ${rr} 0 0 0 ${rr} ${rr} h${w-2*rr} a${rr} ${rr} 0 0 0 ${rr} ${-rr} V${y0} Z`;
 }
 
-function renderChart(map){
+function dailyChart(map){
   const N = 14, W = 336, H = 138, TOP = 10, BASE = 112, slot = W/N, bw = slot - 8;
   const days = [];
   for(let i = N-1; i >= 0; i--){
     const k = dayKey(Date.now() - i*DAY);
-    days.push({ k, net: (map.get(k) || {}).net || 0 });
+    days.push({ k, net:(map.get(k) || {}).net || 0 });
   }
   const up = Math.max(0, ...days.map(d => d.net));
   const down = Math.max(0, ...days.map(d => -d.net));
@@ -834,123 +1293,241 @@ function renderChart(map){
   const sUp = up > 0 ? (zero - TOP) / up : 0;
   const sDown = down > 0 ? (BASE - zero) / down : 0;
   const tk = todayKey();
-
   let out = `<line x1="0" y1="${zero}" x2="${W}" y2="${zero}" stroke="var(--viz-axis)" stroke-width="1"/>`;
-  days.forEach((d, i) => {
+  days.forEach((d,i) => {
     if(d.net !== 0){
       const y1 = d.net > 0 ? zero - d.net*sUp : zero + (-d.net)*sDown;
-      out += `<path d="${barPath(i*slot + (slot-bw)/2, bw, zero, y1, 4)}"
-                fill="${d.net > 0 ? 'var(--viz-in)' : 'var(--viz-out)'}"/>`;
+      out += `<path d="${barPath(i*slot + (slot-bw)/2, bw, zero, y1, 4)}" fill="${d.net > 0 ? 'var(--viz-in)' : 'var(--viz-out)'}"/>`;
     }
     const isToday = d.k === tk;
     out += `<text x="${i*slot + slot/2}" y="${H-6}" text-anchor="middle" font-size="10"
-              font-weight="${isToday ? 800 : 500}" fill="${isToday ? 'var(--viz-in)' : 'var(--viz-axis)'}"
-              >${keyToDate(d.k).toLocaleDateString('en-US',{weekday:'narrow'})}</text>`;
+        font-weight="${isToday ? 800 : 500}" fill="${isToday ? 'var(--viz-in)' : 'var(--viz-axis)'}"
+        >${keyToDate(d.k).toLocaleDateString('en-US',{weekday:'narrow'})}</text>`;
     out += `<rect class="hit" data-k="${d.k}" x="${i*slot}" y="0" width="${slot}" height="${BASE+10}" fill="transparent"/>`;
   });
+  $('#chartName').textContent = 'Last 14 days';
   $('#chart').innerHTML = out;
-  showTip(tk, map);
+  showDayTip(tk, map);
 }
 
-function showTip(k, map){
+/* cumulative total against the target, with a dashed projection to the finish */
+function totalChart(g, map){
+  const W = 336, H = 138, TOP = 12, BASE = 112, L = 2, R = 2;
+  const es = entriesOf(g.id).slice().sort((a,b) => a.ts - b.ts);
+  if(!es.length){ $('#chartName').textContent = 'Total so far'; $('#chart').innerHTML = ''; $('#chartTip').textContent = '—'; return; }
+  const first = new Date(es[0].ts); first.setHours(0,0,0,0);
+  const startMs = first.getTime();
+  const todayMs = keyToDate(todayKey()).getTime();
+  const p = paces(g);
+  const perDay = p.planned > 0 ? p.planned : (p.pace14 > 0 ? p.pace14 : p.paceAll);
+  const eta = p.left > 0 ? etaDate(p.left, perDay) : null;
+  const endMs = eta ? Math.min(eta.getTime(), todayMs + 400*DAY) : todayMs;
+  const span = Math.max(DAY, endMs - startMs);
+  const sum = sumOf(g.id);
+  const maxY = Math.max(g.target, sum) * 1.04;
+  const x = ms => L + (W - L - R) * ((ms - startMs) / span);
+  const y = v => BASE - (BASE - TOP) * (v / maxY);
+
+  const pts = [];
+  let run = 0;
+  const dayMap = byDay(es);
+  for(let t = startMs; t <= todayMs; t += DAY){
+    const k = dayKey(t);
+    if(dayMap.has(k)) run += dayMap.get(k).net;
+    pts.push({ t, v:run });
+  }
+  const line = pts.map((p2,i) => (i ? 'L' : 'M') + x(p2.t).toFixed(1) + ' ' + y(p2.v).toFixed(1)).join(' ');
+  const areaFill = line + ` L${x(todayMs).toFixed(1)} ${BASE} L${x(startMs).toFixed(1)} ${BASE} Z`;
+
+  let out = `<path d="${areaFill}" fill="var(--viz-in)" opacity=".12"/>`;
+  out += `<line x1="${L}" y1="${y(g.target)}" x2="${W-R}" y2="${y(g.target)}" stroke="var(--viz-axis)"
+            stroke-width="1" stroke-dasharray="4 4"/>`;
+  out += `<text x="${W-R}" y="${Math.max(10, y(g.target)-4)}" text-anchor="end" font-size="9"
+            fill="var(--viz-axis)" font-weight="700">target</text>`;
+  if(eta){
+    out += `<path d="M${x(todayMs).toFixed(1)} ${y(sum).toFixed(1)} L${x(endMs).toFixed(1)} ${y(g.target).toFixed(1)}"
+              stroke="var(--viz-plan)" stroke-width="2" stroke-dasharray="3 4" fill="none" stroke-linecap="round"/>`;
+  }
+  out += `<path d="${line}" stroke="var(--viz-in)" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
+  out += `<circle cx="${x(todayMs).toFixed(1)}" cy="${y(sum).toFixed(1)}" r="3.5" fill="var(--viz-in)"
+            stroke="var(--card)" stroke-width="2"/>`;
+  out += `<text x="${L}" y="${H-4}" font-size="9" fill="var(--viz-axis)" font-weight="600">${shortDate(new Date(startMs))}</text>`;
+  out += `<text x="${W-R}" y="${H-4}" text-anchor="end" font-size="9" fill="var(--viz-axis)" font-weight="600"
+            >${eta ? shortDate(eta) : 'today'}</text>`;
+  pts.forEach(p2 => {
+    out += `<rect class="hit" data-t="${p2.t}" data-v="${p2.v}" x="${(x(p2.t) - (W/pts.length)/2).toFixed(1)}"
+              y="0" width="${(W/pts.length).toFixed(1)}" height="${BASE+8}" fill="transparent"/>`;
+  });
+  $('#chartName').textContent = 'Total so far';
+  $('#chart').innerHTML = out;
+  $('#chartTip').textContent = 'Today · ' + fmt(sum);
+  $('#chartTip').style.color = 'var(--viz-in)';
+}
+
+function showDayTip(k, map){
   const net = (map.get(k) || {}).net || 0;
   const tip = $('#chartTip');
-  tip.textContent = dayLabel(k) + ' · ' + (net > 0 ? '+' : net < 0 ? '−' : '') + fmt(Math.abs(net));
+  tip.textContent = dayLabel(k) + ' · ' + signed(net);
   tip.style.color = net > 0 ? 'var(--viz-in)' : net < 0 ? 'var(--viz-out)' : 'var(--muted)';
 }
 $('#chart').addEventListener('pointerdown', e => {
-  const h = e.target.closest('.hit');
-  if(h) showTip(h.dataset.k, byDay());
+  const h = e.target.closest('.hit'); if(!h) return;
+  const g = active(); if(!g) return;
+  if(chartMode === 'daily') showDayTip(h.dataset.k, byDay(entriesOf(g.id)));
+  else {
+    const tip = $('#chartTip');
+    tip.textContent = shortDate(new Date(Number(h.dataset.t))) + ' · ' + fmt(Number(h.dataset.v));
+    tip.style.color = 'var(--viz-in)';
+  }
 });
+
+function renderCharts(){
+  const g = active(); if(!g) return;
+  const map = byDay(entriesOf(g.id));
+  if(chartMode === 'daily') dailyChart(map); else totalChart(g, map);
+}
+
+/* ---- where the money came from ---- */
+const CVARS = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+function renderSourceBars(g){
+  const ins = entriesOf(g.id).filter(e => e.amount > 0);
+  const m = new Map();
+  ins.forEach(e => { const k = e.source || 'Unlabelled'; m.set(k, (m.get(k) || 0) + e.amount); });
+  const rows = [...m.entries()].sort((a,b) => b[1] - a[1]);
+  const total = rows.reduce((a,r) => a + r[1], 0);
+  $('#srcCard').style.display = rows.length ? '' : 'none';
+  if(!rows.length) return;
+  $('#srcTotal').textContent = fmt(total);
+  $('#srcTotal').style.color = 'var(--muted)';
+  const top = rows.slice(0,6);
+  const max = top[0][1];
+  $('#srcBars').innerHTML = top.map(([name, val], i) => `
+    <div class="srcbar">
+      <span class="nm">${esc(name)}</span>
+      <span class="track"><i class="fill" style="width:${Math.max(4, val/max*100)}%;background:${CVARS[i]}"></i></span>
+      <span class="val">${fmt(val)} · ${Math.round(val/total*100)}%</span>
+    </div>`).join('');
+}
 
 /* ============================================================
    render
    ============================================================ */
-function when(ts){
-  const d = new Date(ts), now = new Date();
-  const dd = Math.floor((now.setHours(0,0,0,0) - new Date(ts).setHours(0,0,0,0)) / DAY);
-  const time = d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  if(dd === 0) return 'Today, ' + time;
-  if(dd === 1) return 'Yesterday, ' + time;
-  if(dd < 7) return dd + ' days ago';
-  return d.toLocaleDateString('en-US',{day:'numeric',month:'long'});
-}
-
 function render(){
-  const sum = total(), tgt = db.target || 0;
+  const g = active();
+  renderSources();
+  renderIncomes();
+  $('#goalList').innerHTML = db.goals.length
+    ? db.goals.map(x => goalRow(x, true)).join('')
+    : '<div class="empty">No goals yet.</div>';
+
+  if(!g){
+    $('#goalName').textContent = 'No goal';
+    $('#savedTxt').textContent = '—'; $('#targetTxt').textContent = '—'; $('#pctTxt').textContent = '0%';
+    $('#leftTxt').textContent = 'Create a goal to start';
+    $('#history').innerHTML = '';
+    $('#srcCard').style.display = 'none';
+    $('#chart').innerHTML = '';
+    ['stToday','stWeek','stRate','stEta','stBest','stStreak','stDays','stPerDay']
+      .forEach(id => $('#' + id).textContent = '—');
+    save(); return;
+  }
+
+  const es = entriesOf(g.id);
+  const sum = sumOf(g.id), tgt = g.target;
   const pct = tgt ? Math.min(100, Math.max(0, sum / tgt * 100)) : 0;
 
-  $('#goalName').textContent = db.name || 'My goal';
+  $('#goalName').textContent = g.name;
   $('#savedTxt').textContent = fmt(sum);
   $('#targetTxt').textContent = fmt(tgt);
   $('#pctTxt').textContent = pct.toFixed(pct >= 10 || pct === 0 ? 0 : 1) + '%';
-
   const C = 2 * Math.PI * 92;
   $('#ring').setAttribute('stroke-dasharray', `${(pct/100*C).toFixed(1)} ${C.toFixed(1)}`);
 
-  const left = tgt - sum, done = left <= 0 && tgt > 0;
+  const left = tgt - sum, done = left <= 0;
   $('#doneBanner').style.display = done ? '' : 'none';
   $('#leftTxt').innerHTML = done
     ? `You have <b>${fmt(sum)}</b> — <b>${fmt(-left)}</b> over the target`
     : `<b>${fmt(left)}</b> to go`;
 
-  const ins = db.entries.filter(e => e.amount > 0);
-  const map = byDay();
-  const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
+  const map = byDay(es);
   const todayNet = (map.get(todayKey()) || {}).net || 0;
-  const weekNet = db.entries.filter(e => e.ts >= Date.now() - 7*DAY).reduce((a,e) => a + e.amount, 0);
+  const weekNet = es.filter(e => e.ts >= Date.now() - 7*DAY).reduce((a,e) => a + e.amount, 0);
   $('#stToday').textContent = todayNet ? signed(todayNet) : 'nothing yet';
   $('#stWeek').textContent = weekNet ? signed(weekNet) : '—';
 
-  const first = db.entries.length ? Math.min(...db.entries.map(e => e.ts)) : 0;
-  const days = first ? (Date.now() - first) / DAY : 0;
-  const perDay = days >= 1 ? sum / days : 0;      // needs a day of history to mean anything
+  const p = paces(g);
   if(done){
-    $('#stRate').textContent = perDay > 0 ? fmt(perDay * 7) : '—';
+    $('#kPace').textContent = 'Weekly pace';
+    $('#stRate').textContent = p.paceAll > 0 ? fmt(p.paceAll * 7) : '—';
+    $('#kEta').textContent = 'Est. finish';
     $('#stEta').textContent = 'Reached';
-  } else if(perDay > 0){
-    $('#stRate').textContent = fmt(perDay * 7);
-    const d = Math.ceil(left / perDay);
-    $('#stEta').textContent = d > 400 ? 'A long way off'
-      : new Date(Date.now() + d * DAY).toLocaleDateString('en-US',{day:'numeric',month:'short'});
-  } else { $('#stRate').textContent = '—'; $('#stEta').textContent = '—'; }
+  } else if(p.planned > 0){
+    $('#kPace').textContent = 'Expected weekly';
+    $('#stRate').textContent = fmt(p.planned * 7);
+    const d = etaDate(p.left, p.planned);
+    $('#kEta').textContent = 'Planned finish';
+    $('#stEta').textContent = d ? shortDate(d) : '—';
+  } else {
+    $('#kPace').textContent = 'Weekly pace';
+    $('#stRate').textContent = p.pace14 > 0 ? fmt(p.pace14 * 7) : (p.paceAll > 0 ? fmt(p.paceAll * 7) : '—');
+    // a range from the recent pace and the all-time pace, so a good week doesn't overpromise
+    const ds = [etaDate(p.left, p.pace14), etaDate(p.left, p.paceAll)].filter(Boolean).sort((a,b) => a - b);
+    $('#kEta').textContent = 'Est. finish';
+    if(!ds.length) $('#stEta').textContent = '—';
+    else if(ds[0].getTime() > Date.now() + 400*DAY) $('#stEta').textContent = 'A long way off';
+    else if(ds.length === 1 || Math.abs(ds[1] - ds[0]) < 3*DAY) $('#stEta').textContent = shortDate(ds[0]);
+    else $('#stEta').textContent = shortDate(ds[0]) + ' – ' + shortDate(ds[ds.length-1]);
+  }
 
   // ---- days screen ----
   $('#todayName').textContent = new Date().toLocaleDateString('en-US',{ weekday:'long', month:'short', day:'numeric' });
+  const ins = es.filter(e => e.amount > 0);
   $('#histCount').textContent = ins.length
-    ? `${ins.length} deposit${ins.length === 1 ? '' : 's'} · avg ${fmt(ins.reduce((a,e)=>a+e.amount,0)/ins.length)}`
+    ? `${ins.length} deposit${ins.length === 1 ? '' : 's'} · avg ${fmt(ins.reduce((a,e) => a + e.amount, 0)/ins.length)}`
     : '';
-
   let best = 0;
-  map.forEach(g => { if(g.in > best) best = g.in; });
+  map.forEach(x => { if(x.in > best) best = x.in; });
   $('#stBest').textContent = best ? fmt(best) : '—';
   const st = streakOf(map);
   $('#stStreak').textContent = st ? st + (st === 1 ? ' day' : ' days') : 'none';
-  const activeDays = [...map.values()].filter(g => g.in > 0).length;
+  const activeDays = [...map.values()].filter(x => x.in > 0).length;
   $('#stDays').textContent = activeDays || '—';
-  $('#stPerDay').textContent = perDay > 0 ? fmt(perDay) : '—';
+  $('#stPerDay').textContent = p.paceAll > 0 ? fmt(p.paceAll) : '—';
 
-  renderChart(map);
+  renderCharts();
+  renderSourceBars(g);
 
   const keys = [...map.keys()].sort().reverse();
   $('#history').innerHTML = keys.length ? keys.map(k => {
-    const g = map.get(k);
-    const rows = [...g.items].sort((a,b) => b.ts - a.ts).map(e => `
+    const day = map.get(k);
+    const rows = [...day.items].sort((a,b) => b.ts - a.ts).map(e => `
       <div class="item">
         <div class="ic"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-${e.amount > 0 ? 'in' : 'out'}"/></svg></div>
-        <div class="txt">
-          <div class="t1">${esc(e.note) || (e.amount > 0 ? 'Deposit' : 'Taken out')}</div>
-          <div class="t2">${new Date(e.ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
-        </div>
+        <button class="txt" data-entry="${e.id}">
+          <div class="t1">${esc(e.note) || esc(e.source) || (e.amount > 0 ? 'Deposit' : 'Taken out')}</div>
+          <div class="t2">${e.source && e.note ? esc(e.source) + ' · ' : ''}${new Date(e.ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+        </button>
         <div class="amt ${e.amount < 0 ? 'neg' : ''}">${e.amount > 0 ? '+' : '−'}${fmt(Math.abs(e.amount))}</div>
         <button class="del" data-id="${e.id}" aria-label="Delete">
           <svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-trash"/></svg></button>
       </div>`).join('');
     return `<div class="dayrow"><span>${dayLabel(k)}</span>
-        <b class="${g.net < 0 ? 'neg' : ''}">${g.net > 0 ? '+' : g.net < 0 ? '−' : ''}${fmt(Math.abs(g.net))}</b>
-      </div>${rows}`;
+        <b class="${day.net < 0 ? 'neg' : ''}">${signed(day.net)}</b></div>${rows}`;
   }).join('') : `<div class="empty">Nothing here yet.<br>Add every bit of money that comes in.</div>`;
+
   paintAmt();
+  save();
+}
+
+function renderIncomes(){
+  $('#incomeList').innerHTML = db.incomes.length ? db.incomes.map(i => `
+    <div class="listrow">
+      <div class="ic"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-repeat"/></svg></div>
+      <button class="txt" data-income="${i.id}">
+        <div class="t1">${esc(i.label)} · ${fmt(i.amount)}</div>
+        <div class="t2">${i.every === 'week' ? 'Every ' + DOW[i.dow || 0] : 'Monthly on the ' + ordinal(i.dom || 1)}</div>
+      </button>
+    </div>`).join('') : '<div class="empty">Nothing set up yet.</div>';
 }
 
 /* ============================================================
@@ -961,9 +1538,9 @@ function confetti(){
   cv.width = innerWidth; cv.height = innerHeight;
   const cols = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4'];
   const P = Array.from({length:120}, () => ({
-    x: Math.random()*cv.width, y: -20 - Math.random()*cv.height*.5,
-    r: 4 + Math.random()*6, vy: 2 + Math.random()*4, vx: -1.5 + Math.random()*3,
-    c: cols[(Math.random()*cols.length)|0], a: Math.random()*Math.PI
+    x:Math.random()*cv.width, y:-20 - Math.random()*cv.height*.5,
+    r:4 + Math.random()*6, vy:2 + Math.random()*4, vx:-1.5 + Math.random()*3,
+    c:cols[(Math.random()*cols.length)|0], a:Math.random()*Math.PI
   }));
   const t0 = Date.now();
   (function loop(){
@@ -981,12 +1558,10 @@ function confetti(){
 /* ============================================================
    boot
    ============================================================ */
-applyTheme(); render(); paintSync(); onboardCheck();
-if(session) sync('boot');
+applyTheme(); render(); paintSync(); onboardCheck(); startPolling();
+if(session){ sync(); liveConnect(); }
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 })();
 </script>
-</body>
-</html>
