@@ -259,6 +259,207 @@ label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:10p
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .toast button{background:none;border:0;color:var(--accent2);font-weight:900;font-size:14px;cursor:pointer;pointer-events:auto}
 canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+
+/* ---------- show off 🆒 ----------
+   Everything below only bites when <html data-fun="on">. Turning it off leaves
+   the plain app byte-for-byte the same, so the fun can never break the money.
+   Every hue stays between violet and cyan so it reads as one palette. */
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+:root[data-fun="on"]{
+  --accent:#7c3aed; --accent2:#0fbf8f;
+  --neon1:#7b5cff; --neon2:#2f8bff; --neon3:#25d9e8; --neon4:#9d7bff;
+  --viz-in:#7c3aed; --viz-out:#5b6bd6;
+  --shadow:0 12px 34px rgba(124,58,237,.30);
+}
+:root[data-fun="on"][data-theme="dark"]{
+  --accent:#a78bfa; --accent2:#4fd8e8;
+  --viz-in:#a78bfa; --viz-out:#7c8dff;
+  --shadow:0 12px 34px rgba(0,0,0,.5);
+}
+
+/* aurora drifting behind the app, gold coins tumbling in front of it */
+.aurora{display:none}
+:root[data-fun="on"] .aurora{
+  display:block;position:fixed;inset:-25%;z-index:0;pointer-events:none;filter:saturate(1.5);
+  background:
+    radial-gradient(34% 26% at 20% 20%, rgba(123,92,255,.44), transparent 70%),
+    radial-gradient(36% 28% at 82% 32%, rgba(47,139,255,.42), transparent 70%),
+    radial-gradient(44% 32% at 50% 86%, rgba(37,217,232,.34), transparent 70%);
+  animation:drift 9s ease-in-out infinite alternate
+}
+@keyframes drift{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(-3%,2%,0) scale(1.14)}
+  100%{transform:translate3d(3%,-2%,0) scale(1.06)}
+}
+#ambient{display:none}
+:root[data-fun="on"] #ambient{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.85}
+:root[data-fun="on"] #app{position:relative;z-index:1;background:transparent}
+:root[data-fun="on"] .tabbar{background:color-mix(in srgb, var(--bar) 68%, transparent)}
+
+/* glass cards under a live neon edge */
+:root[data-fun="on"] .card{
+  background:color-mix(in srgb, var(--card) 78%, transparent);
+  backdrop-filter:blur(10px);
+  border-color:color-mix(in srgb, var(--accent) 26%, var(--line))
+}
+:root[data-fun="on"] .danger-card{background:color-mix(in srgb, var(--danger) 10%, transparent);border-color:var(--danger)}
+:root[data-fun="on"] .stat,:root[data-fun="on"] .key,:root[data-fun="on"] .note,:root[data-fun="on"] .fld{
+  background:color-mix(in srgb, var(--card) 80%, transparent)
+}
+@supports ((-webkit-mask-composite:xor) or (mask-composite:exclude)){
+  :root[data-fun="on"] .card{position:relative;isolation:isolate}
+  :root[data-fun="on"] .card::after{
+    content:'';position:absolute;inset:-1.5px;border-radius:inherit;padding:1.5px;pointer-events:none;
+    background:conic-gradient(from var(--ang),var(--neon4),var(--neon2),var(--neon3),var(--neon2),var(--neon4));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    mask-composite:exclude;animation:angspin 4.5s linear infinite;opacity:.85
+  }
+}
+@keyframes angspin{to{--ang:360deg}}
+
+/* the app leans with your finger, screens flip in like cube faces */
+:root[data-fun="on"] main{
+  transform:perspective(1400px) rotateY(var(--px,0deg)) rotateX(var(--py,0deg));
+  transition:transform .25s ease-out
+}
+:root[data-fun="on"] .screen.on{animation:flipin .52s cubic-bezier(.2,.9,.2,1)}
+@keyframes flipin{
+  from{opacity:0;transform:perspective(1000px) rotateY(-32deg) translateZ(-160px)}
+  to{opacity:1;transform:perspective(1000px) rotateY(0) translateZ(0)}
+}
+.shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{
+  10%,90%{transform:translate3d(-2px,0,0)}
+  20%,80%{transform:translate3d(4px,0,0)}
+  30%,50%,70%{transform:translate3d(-7px,0,0)}
+  40%,60%{transform:translate3d(7px,0,0)}
+}
+
+/* tabs, buttons, keypad */
+:root[data-fun="on"] .tab.on{
+  background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 24%, transparent), color-mix(in srgb, var(--neon3) 22%, transparent));
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 6px 18px rgba(124,58,237,.20)
+}
+:root[data-fun="on"] .tab.on .ic-svg{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px) scale(1.09)}}
+:root[data-fun="on"] .btn{
+  background:linear-gradient(120deg,var(--neon2),var(--accent) 42%,var(--neon1) 78%,var(--neon2));
+  background-size:220% 100%;box-shadow:0 6px 20px rgba(124,58,237,.34);
+  animation:slidebg 7s linear infinite
+}
+@keyframes slidebg{to{background-position:-220% 0}}
+:root[data-fun="on"] .btn.ghost{background:var(--chip);color:var(--txt);box-shadow:none;animation:none}
+:root[data-fun="on"] .btn.danger{background:linear-gradient(120deg,#ff5c8a,var(--danger));animation:none}
+:root[data-fun="on"] .btn:active{transform:scale(.96) translateZ(-10px)}
+:root[data-fun="on"] .src.on{background:linear-gradient(120deg,var(--neon2),var(--accent));border-color:transparent}
+:root[data-fun="on"] .key{transform-style:preserve-3d;transition:transform .12s,box-shadow .12s}
+:root[data-fun="on"] .key:active{
+  transform:translateZ(-14px) scale(.93) rotateX(10deg);
+  box-shadow:0 0 0 1.5px var(--accent),0 0 22px color-mix(in srgb,var(--accent) 60%,transparent)
+}
+:root[data-fun="on"] .logo .ic-svg{animation:bob 2.6s ease-in-out infinite}
+:root[data-fun="on"] .done-banner{
+  background:linear-gradient(90deg,#16a34a,#22c55e,var(--neon3),#22c55e,#16a34a);
+  background-size:300% 100%;animation:slidebg 5s linear infinite
+}
+:root[data-fun="on"] .toast{
+  background:linear-gradient(120deg,var(--neon1),var(--neon2),var(--neon3));
+  background-size:220% 100%;color:#fff;animation:slidebg 3s linear infinite;
+  box-shadow:0 8px 30px rgba(124,58,237,.5)
+}
+
+/* the goal ring: neon, tilting toward your finger, with a halo and satellites */
+:root[data-fun="on"] .ringwrap{perspective:900px}
+:root[data-fun="on"] .ringwrap svg{
+  position:relative;z-index:1;
+  transform:rotate(-90deg) rotateY(var(--ty,0deg)) rotateX(var(--tx,0deg));
+  transition:transform .18s ease-out
+}
+/* one shadow only: stacking them makes Chromium rasterise a washed-out box
+   over the aurora, which is what .halo below is for */
+:root[data-fun="on"] .ring-fill{filter:drop-shadow(0 0 9px var(--accent))}
+.ringtext{z-index:2}
+:root[data-fun="on"] .saved{
+  background:linear-gradient(90deg,var(--neon1),var(--neon2),var(--neon3),var(--neon1));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:slidebg 3.2s linear infinite
+}
+:root[data-fun="on"] .of,:root[data-fun="on"] .left{text-shadow:0 1px 3px var(--bg),0 0 12px var(--bg)}
+:root[data-fun="on"] .pct{
+  color:#fff;background:linear-gradient(120deg,var(--accent),var(--neon3));
+  box-shadow:0 4px 14px rgba(124,58,237,.35)
+}
+.halo{display:none}
+:root[data-fun="on"] .halo{
+  display:block;position:absolute;inset:4%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side, transparent 62%, color-mix(in srgb,var(--neon2) 55%,transparent) 76%,
+             color-mix(in srgb,var(--neon1) 45%,transparent) 88%, transparent 100%);
+  animation:halopulse 3.2s ease-in-out infinite
+}
+@keyframes halopulse{50%{transform:scale(1.06);opacity:.75}}
+.orbits{display:none}
+:root[data-fun="on"] .orbits{
+  display:block;position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none
+}
+.orbit{position:absolute;inset:6%;transform-style:preserve-3d}
+.orbit .rot{position:absolute;inset:0;transform-style:preserve-3d;animation:spinz var(--sp,7s) linear infinite}
+.orbit .sat{
+  position:absolute;top:-8px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;
+  background:var(--sc,#fff);box-shadow:0 0 10px var(--sc,#fff),0 0 22px var(--sc,#fff),0 0 40px var(--sc,#fff)
+}
+@keyframes spinz{to{transform:rotate(360deg)}}
+
+/* ---------- 3D coin (pure CSS, 24 rim segments — keep N in sync with buildCoin) ---------- */
+.coin3d{
+  --size:112px; --th:12px;
+  width:var(--size);height:var(--size);position:relative;transform-style:preserve-3d;
+  animation:coinspin 7s linear infinite
+}
+@keyframes coinspin{from{transform:rotateX(12deg) rotateY(0deg)}to{transform:rotateX(12deg) rotateY(360deg)}}
+.coin3d .cf{
+  position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;
+  display:grid;place-items:center;font-weight:900;font-size:calc(var(--size)*.34);color:#8a5a00;
+  background:radial-gradient(circle at 32% 28%, #fff6cf, #ffd25e 42%, #e0a413 72%, #b6790a);
+  box-shadow:inset 0 0 0 calc(var(--size)*.05) rgba(255,255,255,.35)
+}
+.coin3d .cf.a{transform:translateZ(calc(var(--th)/2))}
+.coin3d .cf.b{transform:rotateY(180deg) translateZ(calc(var(--th)/2))}
+.coin3d .cs{
+  position:absolute;left:50%;top:50%;height:var(--th);
+  width:calc(var(--size)*3.1416/24 + 1.5px);
+  margin-left:calc(var(--size)*3.1416/-48);margin-top:calc(var(--th)/-2);
+  background:linear-gradient(90deg,#a9740a,#ffe6a0,#c98c12);
+  transform:rotate(var(--a)) translateY(calc(var(--size)/-2)) rotateX(90deg)
+}
+.stage3d{display:none}
+:root[data-fun="on"] .stage3d{
+  display:grid;place-items:center;position:absolute;inset:0;z-index:0;pointer-events:none;
+  transform-style:preserve-3d;transform:rotateX(var(--tx,0deg)) rotateY(var(--ty,0deg));
+  transition:transform .18s ease-out
+}
+:root[data-fun="on"] .stage3d .coin3d{--size:clamp(96px,20vh,150px);opacity:.45;animation-duration:3.4s}
+
+/* the switch in settings */
+.funrow{display:flex;align-items:center;gap:13px;padding:2px}
+.funrow .funtxt{flex:1;min-width:0}
+.funrow .t1{font-weight:800;font-size:15px}
+.funrow .t2{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45}
+#funCoin{--size:52px;--th:6px;flex:none;animation-duration:5s}
+#funCoin .cf,#funCoin .cs{filter:grayscale(1) brightness(.92);transition:filter .4s}
+:root[data-fun="on"] #funCoin .cf,:root[data-fun="on"] #funCoin .cs{filter:none}
+.switch{
+  flex:none;width:53px;height:31px;border-radius:999px;padding:0;cursor:pointer;position:relative;
+  border:1px solid var(--line);background:var(--chip);transition:background .25s,border-color .25s
+}
+.switch i{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 6px rgba(0,0,0,.25);
+  transition:transform .28s cubic-bezier(.2,.9,.2,1)
+}
+.switch[aria-checked="true"]{background:linear-gradient(120deg,var(--neon1,#7c3aed),var(--neon3,#06d6a0));border-color:transparent}
+.switch[aria-checked="true"] i{transform:translateX(22px)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
@@ -280,6 +481,9 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2.5 20.5 6 17 9.5M20.5 6H7a3.5 3.5 0 0 0-3.5 3.5V11M7 21.5 3.5 18 7 14.5M3.5 18H17a3.5 3.5 0 0 0 3.5-3.5V13"/></symbol>
 </defs></svg>
 
+<div class="aurora" id="aurora" aria-hidden="true"></div>
+<canvas id="ambient" aria-hidden="true"></canvas>
+
 <div id="app">
   <div class="topbar">
     <h1 class="logo"><svg class="ic-svg" aria-hidden="true"><use href="#i-goal"/></svg><span>Stash</span></h1>
@@ -295,7 +499,12 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
         <svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-chev"/></svg>
       </button>
       <div class="ringbox">
-        <div class="ringwrap">
+        <div class="ringwrap" id="ringWrap">
+          <div class="stage3d" aria-hidden="true">
+            <div class="halo"></div>
+            <div class="orbits" id="orbits"></div>
+            <div class="coin3d" id="ringCoin"></div>
+          </div>
           <svg viewBox="0 0 212 212">
             <defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#22c55e"/>
@@ -367,6 +576,22 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 
     <!-- SETTINGS -->
     <section class="screen scroll" id="s-set">
+      <div class="sec">
+        <h3>Look and feel</h3>
+        <div class="card">
+          <div class="funrow">
+            <div class="coin3d" id="funCoin" aria-hidden="true"></div>
+            <div class="funtxt">
+              <div class="t1">Show off</div>
+              <div class="t2">Neon colours, coins raining behind the app, a 3D coin and orbits around the ring,
+                screens that flip, counting totals and fireworks when money lands.</div>
+            </div>
+            <button class="switch" id="funBtn" role="switch" aria-checked="false" aria-label="Show off"><i></i></button>
+          </div>
+          <p class="hint">Nothing about your money changes — the app just looks a lot more fun. Turn it off any time.</p>
+        </div>
+      </div>
+
       <div class="sec">
         <h3>Goals</h3>
         <div class="card">
@@ -704,7 +929,7 @@ const KEY = 'kupa.v1';                 // kept from the first version so old dat
 const SESS = 'stash.session';
 const KEYOVR = 'stash.anonkey';
 const URLOVR = 'stash.url';
-const def = { v:2, goals:[], activeId:'', entries:[], incomes:[], theme:'light',
+const def = { v:2, goals:[], activeId:'', entries:[], incomes:[], theme:'light', fun:false,
               deleted:{ entries:[], goals:[], incomes:[] }, lastSync:0 };
 // declared as functions, not consts: load() runs before this point and uses them
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
@@ -1100,6 +1325,113 @@ function applyTheme(){
 $('#themeBtn').onclick = () => { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderCharts(); };
 
 /* ============================================================
+   show off — the whole app goes neon and 3D
+   ============================================================ */
+// One CSS coin = two faces plus a rim of thin slabs standing on their edge.
+// N must match the /24 divisor in the .coin3d .cs rule.
+function buildCoin(el){
+  const N = 24;
+  let h = '<div class="cf a">$</div><div class="cf b">$</div>';
+  for(let i = 0; i < N; i++) h += `<i class="cs" style="--a:${(i * 360 / N).toFixed(1)}deg"></i>`;
+  el.innerHTML = h;
+}
+buildCoin($('#funCoin')); buildCoin($('#ringCoin'));
+
+// the coins wear whatever currency the open goal uses
+function paintCoins(){
+  const sym = cur();
+  document.querySelectorAll('.coin3d .cf').forEach(f => f.textContent = sym);
+}
+
+// three neon satellites, each on its own tilted plane — real 3D, no library
+function buildOrbits(){
+  const set = [[68, 6.5, 'var(--neon1)'], [104, 9, 'var(--neon3)'], [28, 12, 'var(--neon2)']];
+  $('#orbits').innerHTML = set.map(([tilt, sp, c]) =>
+    `<div class="orbit" style="transform:rotateX(${tilt}deg)">
+       <div class="rot" style="--sp:${sp}s"><i class="sat" style="--sc:${c}"></i></div>
+     </div>`).join('');
+}
+buildOrbits();
+
+function applyFun(){
+  document.documentElement.setAttribute('data-fun', db.fun ? 'on' : 'off');
+  $('#funBtn').setAttribute('aria-checked', db.fun ? 'true' : 'false');
+  if(!db.fun){ tiltRing(null); tiltApp(null); }
+  ambient(db.fun);
+}
+
+$('#funBtn').onclick = () => {
+  db.fun = !db.fun; save(); applyFun(); renderCharts();
+  if(db.fun){ confetti(1.4); shake(); buzz([12, 40, 18]); toast('Show off'); }
+  else toast('Back to plain');
+};
+
+/* ---- coins raining behind the whole app ---- */
+let amb = { raf:0, on:false, coins:[] };
+function ambient(on){
+  const cv = $('#ambient');
+  amb.on = on && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!amb.on){ cancelAnimationFrame(amb.raf); amb.raf = 0; return; }
+  const fit = () => { cv.width = innerWidth; cv.height = innerHeight; };
+  fit(); addEventListener('resize', fit);
+  amb.coins = Array.from({length:16}, () => ({
+    x:Math.random()*cv.width, y:Math.random()*cv.height,
+    r:9 + Math.random()*20, vy:-(.25 + Math.random()*.7), a:Math.random()*6.3,
+    sp:.02 + Math.random()*.05, drift:(-.5 + Math.random()) * .35
+  }));
+  if(!amb.raf) amb.raf = requestAnimationFrame(ambLoop);
+}
+function ambLoop(){
+  const cv = $('#ambient'), ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if(!document.hidden) amb.coins.forEach(c => {
+    c.y += c.vy; c.x += c.drift; c.a += c.sp;
+    if(c.y < -c.r*2){ c.y = cv.height + c.r*2; c.x = Math.random()*cv.width; }
+    // squashing the disc as it turns is what sells the tumble
+    const w = Math.max(.1, Math.abs(Math.cos(c.a))) * c.r;
+    const g = ctx.createLinearGradient(-w, -c.r, w, c.r);
+    g.addColorStop(0, '#b6790a'); g.addColorStop(.45, '#ffe9a8'); g.addColorStop(1, '#d59b12');
+    ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a * .3); ctx.globalAlpha = .3;
+    ctx.beginPath(); ctx.ellipse(0, 0, w, c.r, 0, 0, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.restore();
+  });
+  amb.raf = amb.on ? requestAnimationFrame(ambLoop) : 0;
+  if(!amb.on) ctx.clearRect(0, 0, cv.width, cv.height);
+}
+
+function shake(){
+  if(!db.fun || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const a = $('#app'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake');
+  setTimeout(() => a.classList.remove('shake'), 500);
+}
+const buzz = pattern => { if(db.fun && navigator.vibrate) try{ navigator.vibrate(pattern); }catch(e){} };
+
+// the app itself leans, not just the ring
+function tiltApp(e){
+  const m = $('#app');
+  if(!e){ m.style.removeProperty('--px'); m.style.removeProperty('--py'); return; }
+  const dx = e.clientX / innerWidth - .5, dy = e.clientY / innerHeight - .5;
+  m.style.setProperty('--px', (dx * 7).toFixed(1) + 'deg');
+  m.style.setProperty('--py', (-dy * 5).toFixed(1) + 'deg');
+}
+addEventListener('pointermove', e => { if(db.fun) tiltApp(e); });
+
+// the ring leans toward the pointer — the coin behind it leans with it
+function tiltRing(e){
+  const w = $('#ringWrap');
+  if(!e){ w.style.removeProperty('--tx'); w.style.removeProperty('--ty'); return; }
+  const r = w.getBoundingClientRect();
+  if(!r.width) return;
+  const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+  const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+  w.style.setProperty('--ty', (Math.max(-1, Math.min(1, dx)) * 15).toFixed(1) + 'deg');
+  w.style.setProperty('--tx', (Math.max(-1, Math.min(1, -dy)) * 15).toFixed(1) + 'deg');
+}
+$('#s-home').addEventListener('pointermove', e => { if(db.fun) tiltRing(e); });
+$('#s-home').addEventListener('pointerleave', () => tiltRing(null));
+$('#s-home').addEventListener('pointercancel', () => tiltRing(null));
+
+/* ============================================================
    goals
    ============================================================ */
 // sheets hold ids, never object references: a sync pull replaces every object in
@@ -1238,10 +1570,12 @@ function addEntry(amount, note, source){
                     ts:Date.now(), updatedAt:Date.now() });
   save(); render(); syncSoon();
   if(before < g.target && sumOf(g.id) >= g.target && !g.celebrated){
-    g.celebrated = true; g.updatedAt = Date.now(); save(); confetti(); go('home');
+    g.celebrated = true; g.updatedAt = Date.now(); save(); confetti(db.fun ? 2 : 1);
+    shake(); buzz([30, 60, 30, 60, 120]); go('home');
     toast('Goal reached!', () => showGoalSummary(g));
     $('#undoBtn').textContent = 'See summary';
   } else {
+    if(db.fun && amount > 0){ confetti(.5); buzz(18); }   // show off celebrates every deposit, not just the finish
     toast((amount > 0 ? 'Added ' : 'Took out ') + fmt(Math.abs(amount)));
   }
 }
@@ -1844,6 +2178,25 @@ function renderSourceBars(g){
 /* ============================================================
    render
    ============================================================ */
+// show off counts the total up to its new value instead of snapping to it
+let savedShown = null, savedRaf = 0;
+function setSaved(n){
+  const el = $('#savedTxt');
+  if(savedShown === n && savedRaf) return;              // already on its way there
+  cancelAnimationFrame(savedRaf); savedRaf = 0;
+  if(!db.fun || savedShown === null || savedShown === n
+     || matchMedia('(prefers-reduced-motion: reduce)').matches){
+    savedShown = n; el.textContent = fmt(n); return;
+  }
+  const from = savedShown, t0 = performance.now(), dur = 700;
+  savedShown = n;
+  savedRaf = requestAnimationFrame(function step(t){
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    if(k < 1){ el.textContent = fmt(Math.round(from + (n - from) * e)); savedRaf = requestAnimationFrame(step); }
+    else { el.textContent = fmt(n); savedRaf = 0; }
+  });
+}
+
 function render(){
   const g = active();
   renderSources();
@@ -1854,6 +2207,7 @@ function render(){
 
   if(!g){
     $('#goalName').textContent = 'No goal';
+    savedShown = null; cancelAnimationFrame(savedRaf); savedRaf = 0;
     $('#savedTxt').textContent = '—'; $('#targetTxt').textContent = '—'; $('#pctTxt').textContent = '0%';
     $('#leftTxt').textContent = 'Create a goal to start';
     $('#history').innerHTML = '';
@@ -1869,7 +2223,7 @@ function render(){
   const pct = tgt ? Math.min(100, Math.max(0, sum / tgt * 100)) : 0;
 
   $('#goalName').textContent = g.name;
-  $('#savedTxt').textContent = fmt(sum);
+  setSaved(sum);
   $('#targetTxt').textContent = fmt(tgt);
   $('#pctTxt').textContent = pct.toFixed(pct >= 10 || pct === 0 ? 0 : 1) + '%';
   const C = 2 * Math.PI * 92;
@@ -1960,6 +2314,7 @@ function render(){
         : '');
 
   paintAmt();
+  paintCoins();
   save();
 }
 
@@ -1978,33 +2333,75 @@ function renderIncomes(){
 /* ============================================================
    confetti
    ============================================================ */
-function confetti(){
+function confetti(scale = 1){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const cv = $('#confetti'), ctx = cv.getContext('2d');
-  cv.width = innerWidth; cv.height = innerHeight;
-  const cols = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4'];
-  const P = Array.from({length:120}, () => ({
+  const cv = $('#confetti');
+  if(cv.width !== innerWidth || cv.height !== innerHeight){ cv.width = innerWidth; cv.height = innerHeight; }
+  const fun = !!db.fun;
+  const cols = fun
+    ? ['#7b5cff','#2f8bff','#25d9e8','#a78bfa','#8fd8ff','#5f6dff']
+    : ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4'];
+  const n = Math.max(12, Math.round((fun ? 170 : 120) * scale));
+  const life = (fun ? 4200 : 3200) * Math.max(.5, Math.min(1, scale));
+  const now = Date.now();
+  for(let i = 0; i < n; i++) parts.push({
     x:Math.random()*cv.width, y:-20 - Math.random()*cv.height*.5,
-    r:4 + Math.random()*6, vy:2 + Math.random()*4, vx:-1.5 + Math.random()*3,
-    c:cols[(Math.random()*cols.length)|0], a:Math.random()*Math.PI
-  }));
-  const t0 = Date.now();
-  (function loop(){
-    ctx.clearRect(0,0,cv.width,cv.height);
-    P.forEach(p => {
-      p.y += p.vy; p.x += p.vx; p.a += .1;
-      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a);
-      ctx.fillStyle = p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*.6); ctx.restore();
-    });
-    if(Date.now() - t0 < 3200) requestAnimationFrame(loop);
-    else ctx.clearRect(0,0,cv.width,cv.height);
-  })();
+    r:4 + Math.random()*(fun ? 9 : 6), vy:2 + Math.random()*4, vx:-1.5 + Math.random()*3,
+    c:cols[(Math.random()*cols.length)|0], a:Math.random()*Math.PI,
+    spin:.08 + Math.random()*.16, coin:fun && Math.random() < .45, gold:'#f0c24b',
+    die:now + life * (.7 + Math.random()*.5)
+  });
+  if(fun) for(let i = 0; i < Math.max(1, Math.round(3 * scale)); i++) boom(
+    cv.width * (.2 + Math.random()*.6), cv.height * (.15 + Math.random()*.45),
+    cols[(Math.random()*cols.length)|0], now + 1500);
+  if(!raf) raf = requestAnimationFrame(loop);
+}
+
+// a firework: everything flies out of one point and falls
+function boom(x, y, c, die){
+  for(let i = 0; i < 34; i++){
+    const th = Math.random() * 6.3, v = 2.5 + Math.random() * 5.5;
+    parts.push({ x, y, r:2 + Math.random()*3, vx:Math.cos(th)*v, vy:Math.sin(th)*v,
+                 c, a:0, spin:.2, coin:false, spark:true, die });
+  }
+}
+
+// one loop for every burst, so two celebrations at once don't wipe each other out
+let parts = [], raf = 0;
+function loop(){
+  const cv = $('#confetti'), ctx = cv.getContext('2d'), now = Date.now();
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  parts = parts.filter(p => p.die > now && (p.spark || p.y < cv.height + 60));
+  parts.forEach(p => {
+    if(p.spark){ p.vy += .12; p.vx *= .985; p.vy *= .985; }
+    p.y += p.vy; p.x += p.vx; p.a += p.spin;
+    ctx.save(); ctx.translate(p.x, p.y);
+    if(p.spark){
+      ctx.globalAlpha = Math.max(0, Math.min(1, (p.die - now) / 900));
+      ctx.fillStyle = p.c; ctx.shadowColor = p.c; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(0, 0, p.r, 0, 7); ctx.fill();
+      ctx.restore(); return;
+    }
+    if(p.coin){
+      // squashing the circle as it turns reads as a coin tumbling in 3D
+      ctx.rotate(p.a * .35);
+      ctx.scale(Math.max(.12, Math.abs(Math.cos(p.a))), 1);
+      ctx.fillStyle = p.gold; ctx.beginPath(); ctx.arc(0, 0, p.r, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,246,207,.8)'; ctx.lineWidth = 1.2; ctx.stroke();
+    }else{
+      ctx.rotate(p.a);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r*.6);
+    }
+    ctx.restore();
+  });
+  if(parts.length) raf = requestAnimationFrame(loop);
+  else { raf = 0; ctx.clearRect(0, 0, cv.width, cv.height); }
 }
 
 /* ============================================================
    boot
    ============================================================ */
-applyTheme(); render(); paintSync();
+applyTheme(); applyFun(); render(); paintSync();
 consumeAuthRedirect();   // may sign us in before loginCheck() decides whether to show the login screen
 loginCheck(); onboardCheck(); startPolling();
 if(session){ sync(); liveConnect(); }
