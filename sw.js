@@ -1,6 +1,6 @@
 // Offline cache – so the app opens without network once visited.
-const CACHE = 'kupa-v1';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE = 'stash-v2';
+const ASSETS = ['./', './index.html', './config.js', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
