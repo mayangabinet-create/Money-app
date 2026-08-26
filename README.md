@@ -23,10 +23,17 @@ a gold coin spinning in real CSS 3D behind the progress ring — it leans toward
 finger — and confetti that throws tumbling coins, on every deposit and not just at
 the finish line.
 
-It is only paint. Nothing about your goals, entries or sync changes, the setting
-lives on the device it was switched on, and turning it off puts the plain app back
-exactly as it was. Anyone who asks their system for reduced motion gets the colours
-without the movement.
+Under it sits a second switch, **Extreme**, which turns everything up as far as it
+goes: gold coins tumbling behind the whole app, three neon satellites orbiting the
+ring in 3D, screens that flip in like cube faces, the app leaning with your finger,
+the total counting up to its new value, a live neon edge crawling around every card,
+and fireworks with a screen kick and a buzz when money lands. Extreme switches Cool
+mode on with it, and switching Cool mode off takes Extreme with it.
+
+It is only paint. Nothing about your goals, entries or sync changes, both settings
+live on the device they were switched on, and turning them off puts the plain app
+back exactly as it was. Anyone who asks their system for reduced motion gets the
+colours without the movement.
 
 ## Running it
 

@@ -577,9 +577,34 @@ function seed(page, opts = {}) {
      await pF.evaluate(() => JSON.parse(localStorage.getItem('kupa.v1')).fun), true);
   eq('the money is untouched', await pF.textContent('#savedTxt'), beforeFun);
   await pF.click('.tab[data-scr="set"]'); await pF.waitForTimeout(200);
+
+  // ---- extreme
+  eq('extreme starts off', await pF.getAttribute('#xBtn', 'aria-checked'), 'false');
+  eq('cool alone is not extreme', await pF.getAttribute('html', 'data-x'), 'off');
+  await pF.click('#xBtn'); await pF.waitForTimeout(400);
+  eq('extreme turns on', await pF.getAttribute('html', 'data-x'), 'on');
+  ok('coins rain behind the app', await pF.locator('#ambient').isVisible());
+  eq('the ring gets three orbits', await pF.locator('#orbits .orbit').count(), 3);
+  // the total counts up to its new value instead of snapping there
+  await pF.click('.tab[data-scr="add"]'); await pF.waitForTimeout(200);
+  await pF.click('.chip[data-v="500"]'); await pF.click('#addBtn');
+  const seen = new Set();
+  for (let i = 0; i < 10; i++) seen.add(await pF.textContent('#savedTxt'));
+  await pF.waitForTimeout(1000);
+  const settled = await pF.textContent('#savedTxt');
+  ok('the total counts up instead of snapping', seen.size > 1, [...seen].join(' → '));
+  const wanted = '$' + (Number(beforeFun.replace(/[^0-9.]/g, '')) + 500).toLocaleString('en-US');
+  eq('and lands on the real total', settled, wanted);
+  await pF.click('.tab[data-scr="set"]'); await pF.waitForTimeout(200);
+
+  // ---- back to plain
   await pF.click('#funBtn'); await pF.waitForTimeout(300);
   eq('turning it off puts the plain app back', await pF.getAttribute('html', 'data-fun'), 'off');
+  eq('extreme goes with it', await pF.getAttribute('html', 'data-x'), 'off');
+  eq('extreme is not left switched on underneath',
+     await pF.evaluate(() => JSON.parse(localStorage.getItem('kupa.v1')).extreme), false);
   ok('the aurora goes away', !(await pF.locator('#aurora').isVisible()));
+  ok('the coins stop raining', !(await pF.locator('#ambient').isVisible()));
   await ctxF.close();
 
   eq('no javascript errors', errors.length, 0, JSON.stringify(errors));
