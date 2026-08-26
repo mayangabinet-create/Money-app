@@ -594,15 +594,10 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
       <button class="linkbtn" id="loginForgot" style="width:100%">Forgot password?</button>
     </div>
 
-    <div id="loginConnect" style="display:none">
-      <p class="hint" style="margin-bottom:6px">Connect a Supabase project to sync. You can also skip this and
-        save on this device only.</p>
-      <label for="loginUrl">Project URL</label>
-      <input class="fld" id="loginUrl" placeholder="https://xxxx.supabase.co">
-      <label for="loginKey">Anon key</label>
-      <input class="fld" id="loginKey" placeholder="paste the anon / publishable key">
-      <button class="btn block" id="loginConnectGo">Connect</button>
-    </div>
+    <!-- No sync configured (developer forks only — a real deploy always ships a key
+         in config.js): stay out of the way rather than show backend setup fields. -->
+    <p id="loginUnconfigured" class="hint" style="display:none;text-align:center">
+      Sync isn't set up on this copy of the app yet.</p>
 
     <div class="loginskip">
       <button class="linkbtn" id="loginSkip">Use without an account</button>
@@ -910,9 +905,10 @@ function paintLogin(){
   $('#loginSwap').textContent = up ? 'I already have an account' : 'Create an account instead';
   $('#loginPass').setAttribute('autocomplete', up ? 'new-password' : 'current-password');
   $('#loginForgot').style.display = up ? 'none' : '';
+  // sync is meant to be pre-wired for every real deploy; this only shows on a
+  // developer's own fork that has not set a key yet — never on the shipped app
   $('#loginForm').style.display = configured() ? '' : 'none';
-  $('#loginConnect').style.display = configured() ? 'none' : '';
-  if(!configured() && !$('#loginUrl').value) $('#loginUrl').value = baseUrl();
+  $('#loginUnconfigured').style.display = configured() ? 'none' : '';
 }
 function openLogin(){ paintLogin(); $('#login').classList.add('on'); }
 function closeLogin(){ $('#login').classList.remove('on'); }
@@ -926,14 +922,6 @@ $('#loginSkip').onclick = () => {
   localStorage.setItem(SKIP, '1');
   closeLogin(); onboardCheck();
   toast('Saved on this device — you can sign in any time');
-};
-$('#loginConnectGo').onclick = () => {
-  const u = $('#loginUrl').value.trim().replace(/\/+$/,''), k = $('#loginKey').value.trim();
-  if(u && !/^https:\/\/.+/.test(u)){ toast('The URL should start with https://'); return; }
-  if(k.length < 20){ toast('That key looks too short'); return; }
-  if(u) localStorage.setItem(URLOVR, u);
-  localStorage.setItem(KEYOVR, k);
-  paintSync(); paintLogin(); toast('Connected');
 };
 addEventListener('keydown', e => {
   if(e.key === 'Enter' && $('#login').classList.contains('on') && $('#loginForm').style.display !== 'none') $('#loginGo').click();

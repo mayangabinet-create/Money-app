@@ -75,6 +75,24 @@ function seed(page, opts = {}) {
   eq('reset link can be sent from here', await page.textContent('#toastTxt'), 'Reset link sent — check your email');
   await page.click('#loginSkip'); await page.waitForTimeout(300);
   ok('skipping goes straight into the app', !(await page.locator('#login').isVisible()));
+  ok('no backend setup fields anywhere on the login screen',
+     (await page.locator('#loginConnect, #loginUrl, #loginKey, #loginConnectGo').count()) === 0);
+
+  // ---------------------------------------------------------------- unconfigured deploy
+  section('login screen with no key set (a developer fork, never the shipped app)');
+  const ctx5 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx5.addInitScript(() => { window.STASH_CONFIG = { url: '', anonKey: '' }; });
+  const p5 = await ctx5.newPage();
+  p5.on('pageerror', e => errors.push('unconfigured: ' + e.message));
+  await p5.goto(APP); await p5.waitForTimeout(400);
+  ok('email/password fields are hidden', !(await p5.locator('#loginForm').isVisible()));
+  ok('a plain message shows instead', await p5.locator('#loginUnconfigured').isVisible());
+  ok('never a Project URL or Anon key prompt',
+     (await p5.locator('#loginConnect, #loginUrl, #loginKey').count()) === 0);
+  ok('skipping still works with no backend at all', await p5.locator('#loginSkip').isVisible());
+  await p5.click('#loginSkip'); await p5.waitForTimeout(250);
+  ok('and lands in the app', !(await p5.locator('#login').isVisible()));
+  await ctx5.close();
 
   // ---------------------------------------------------------------- onboarding
   section('onboarding');
