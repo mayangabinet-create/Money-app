@@ -94,6 +94,50 @@ function seed(page, opts = {}) {
   ok('and lands in the app', !(await p5.locator('#login').isVisible()));
   await ctx5.close();
 
+  // ---------------------------------------------------------------- confirmation / recovery links
+  // Supabase verifies the email link's token itself, then redirects back to the
+  // app with the session in the URL fragment (#access_token=...&type=...). The
+  // bug report this covers: a user landed on a broken page after confirming —
+  // this exercises the app's side of consuming that fragment.
+  section('confirmation and password-reset links');
+  // each scenario is a fresh context: a real inbound link is always a brand new
+  // page load, not a same-document hash change on a page already open — reusing
+  // one page across scenarios would let a same-document navigation silently skip
+  // re-running the boot logic and mask exactly the class of bug this covers
+  const newRedirectPage = async () => {
+    const c = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await c.addInitScript(m => { window.STASH_CONFIG = { url: m, anonKey: 'test-anon-key-aaaaaaaaaaaaaaaaaaa' }; }, MOCK);
+    const pg = await c.newPage();
+    pg.on('pageerror', e => errors.push('redirect: ' + e.message));
+    return { c, pg };
+  };
+
+  const signup = await newRedirectPage();
+  await signup.pg.goto(APP + '#access_token=tok&refresh_token=ref&expires_in=3600&token_type=bearer&type=signup');
+  await signup.pg.waitForTimeout(500);
+  ok('a confirmation link signs in directly, no login screen', !(await signup.pg.locator('#login').isVisible()));
+  eq('and says so', await signup.pg.textContent('#toastTxt'), 'Signed in');
+  ok('the tokens are stripped from the address bar', !signup.pg.url().includes('access_token'));
+  await signup.c.close();
+
+  const recovery = await newRedirectPage();
+  await recovery.pg.goto(APP + '#access_token=tok&refresh_token=ref&expires_in=3600&token_type=bearer&type=recovery');
+  await recovery.pg.waitForTimeout(500);
+  ok('a "forgot password" link also signs the visit in', !(await recovery.pg.locator('#login').isVisible()));
+  ok('and opens the set-new-password sheet', await recovery.pg.locator('#pwReset .sheet').isVisible());
+  await recovery.pg.fill('#pwNew', 'newpassword123');
+  await recovery.pg.click('#pwSave'); await recovery.pg.waitForTimeout(400);
+  ok('saving closes the sheet', !(await recovery.pg.locator('#pwReset').evaluate(e => e.classList.contains('open'))));
+  eq('and confirms', await recovery.pg.textContent('#toastTxt'), 'Password updated');
+  await recovery.c.close();
+
+  const garbage = await newRedirectPage();
+  await garbage.pg.goto(APP + '#access_token=not-a-jwt&refresh_token=ref&type=signup');
+  await garbage.pg.waitForTimeout(400);
+  ok('a malformed token in the fragment does not crash the page',
+     await garbage.pg.locator('#app').isVisible());
+  await garbage.c.close();
+
   // ---------------------------------------------------------------- onboarding
   section('onboarding');
   ok('first run shows onboarding', await page.locator('#onboard').isVisible());

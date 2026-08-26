@@ -574,6 +574,18 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   </div>
 </div>
 
+<!-- SET NEW PASSWORD (arrived here from a "forgot password" email link) -->
+<div class="overlay" id="pwReset">
+  <div class="sheet">
+    <h3>Choose a new password</h3>
+    <label for="pwNew">New password</label>
+    <input class="fld" id="pwNew" type="password" autocomplete="new-password" placeholder="at least 6 characters">
+    <div class="sheetbtns">
+      <button class="btn block" id="pwSave">Save password</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOGIN -->
 <div id="login">
   <div class="obwrap loginwrap">
@@ -754,10 +766,11 @@ async function freshToken(){
   return out.access_token;
 }
 
-async function rest(path, opts = {}){
+async function authed(path, opts = {}){
   const token = await freshToken();
-  return api('/rest/v1' + path, { ...opts, headers:{ 'Authorization':'Bearer ' + token, ...(opts.headers || {}) } });
+  return api(path, { ...opts, headers:{ 'Authorization':'Bearer ' + token, ...(opts.headers || {}) } });
 }
+const rest = (path, opts = {}) => authed('/rest/v1' + path, opts);
 
 const toRow = {
   goals: g => ({ id:g.id, name:g.name, target:g.target, currency:g.cur, celebrated:!!g.celebrated,
@@ -973,6 +986,43 @@ async function recover(sel){
   }catch(e){ toast(e.message || 'Could not send the reset link'); }
 }
 $('#forgotBtn').onclick = () => recover('#email');
+
+/* ---- landing back here from a confirmation or password-reset email ----
+   Supabase verifies the link's token itself, then redirects to the Site URL
+   with a session in the URL fragment: #access_token=...&type=signup|recovery.
+   Consume it before deciding whether to show the login screen. */
+function consumeAuthRedirect(){
+  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : '';
+  if(!hash.includes('access_token')) return;
+  const p = new URLSearchParams(hash);
+  const at = p.get('access_token'), rt = p.get('refresh_token');
+  history.replaceState(null, '', location.pathname + location.search);   // tokens should not linger in the URL bar
+  if(!at || !rt) return;
+  let email = '';
+  try{ email = JSON.parse(atob(at.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email || ''; }catch(e){}
+  storeSession({ access_token:at, refresh_token:rt, expires_in:Number(p.get('expires_in')) || 3600, user:{ email } });
+  sync(); liveConnect();
+  if(p.get('type') === 'recovery'){
+    openSheet('pwReset');
+  } else {
+    toast('Signed in');
+  }
+}
+$('#pwSave').onclick = async () => {
+  const pw = $('#pwNew').value;
+  if(pw.length < 6){ toast('At least 6 characters'); return; }
+  const btn = $('#pwSave'); btn.disabled = true;
+  try{
+    await authed('/auth/v1/user', { method:'PUT', body:JSON.stringify({ password:pw }) });
+    $('#pwNew').value = '';
+    closeSheet('pwReset');
+    toast('Password updated');
+  }catch(e){
+    toast(e.message || 'Could not set the password');
+  }finally{
+    btn.disabled = false;
+  }
+};
 $('#syncNowBtn').onclick = sync;
 $('#signOutBtn').onclick = () => {
   liveStop(); setSession(null); syncErr = '';
@@ -1877,7 +1927,9 @@ function confetti(){
 /* ============================================================
    boot
    ============================================================ */
-applyTheme(); render(); paintSync(); loginCheck(); onboardCheck(); startPolling();
+applyTheme(); render(); paintSync();
+consumeAuthRedirect();   // may sign us in before loginCheck() decides whether to show the login screen
+loginCheck(); onboardCheck(); startPolling();
 if(session){ sync(); liveConnect(); }
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').then(reg => {

@@ -12,7 +12,7 @@ const TABLES = { stash_goals: 'goals', stash_entries: 'entries', stash_incomes: 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS'
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS'
 };
 const send = (res, code, body) => {
   res.writeHead(code, { ...cors, 'Content-Type': 'application/json' });
@@ -43,6 +43,12 @@ const api = http.createServer((req, res) => {
       });
     }
     if (u.pathname === '/auth/v1/recover') return send(res, 200, {});
+    if (u.pathname === '/auth/v1/user' && req.method === 'PUT') {
+      if (req.headers.authorization !== 'Bearer tok' && req.headers.authorization !== 'Bearer recovery-tok') {
+        return send(res, 401, { message: 'bad jwt' });
+      }
+      return send(res, 200, { id: 'u1', email: 'me@example.com' });
+    }
 
     // ---- rest ----
     if (req.headers.authorization !== 'Bearer tok') return send(res, 401, { message: 'bad jwt' });
