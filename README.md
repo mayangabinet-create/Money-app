@@ -112,6 +112,26 @@ Created by `supabase/schema.sql`:
 All three have row level security on: a signed-in user can only touch rows where
 `auth.uid() = user_id`.
 
+### Deleting an account
+
+**Settings → Danger zone** has two different levels of destructive:
+
+- **Reset everything** wipes every goal and entry, locally and in the cloud, but
+  the account itself — and the ability to sign back in — stays.
+- **Delete account** (only shown once signed in) permanently deletes the account.
+  Typing `DELETE` is required before the button enables.
+
+Deleting a user needs a privileged key that must never reach the browser, so this
+runs server-side: `supabase/functions/delete-account` is an Edge Function that
+checks the caller's own session, then deletes that account with the project's
+service key. Every `stash_*` table references `auth.users` with `on delete
+cascade`, so the account's goals, entries and incomes go with it automatically —
+no separate cleanup step. Deploy it once per project:
+
+```bash
+supabase functions deploy delete-account --project-ref <ref>
+```
+
 ## Tests
 
 ```bash
@@ -120,13 +140,14 @@ npm test
 ```
 
 `npm test` starts a static server and a mock Supabase, drives the real page in
-Chromium, and prints a PASS/FAIL line per check — 131 of them: the login screen,
-onboarding, the keypad, multiple goals, editing (including an edit saved right
-after a sync pull), day stats, all three charts, sources, expected income and its
-currency, search and filtering, sync, live updates over a mock realtime socket, a
-second device, signing out, offline queueing, backup merge and replace, layout at
-three screen sizes, and upgrading data saved by the first version. It exits
-non-zero if anything fails.
+Chromium, and prints a PASS/FAIL line per check — 156 of them: the login screen,
+confirmation and password-reset email links, onboarding, the keypad, multiple
+goals, editing (including an edit saved right after a sync pull), day stats, all
+three charts, sources, expected income and its currency, search and filtering,
+sync, live updates over a mock realtime socket, a second device, deleting an
+account, signing out, offline queueing, backup merge and replace, layout at three
+screen sizes, and upgrading data saved by the first version. It exits non-zero if
+anything fails.
 
 ## Files
 
@@ -137,6 +158,7 @@ non-zero if anything fails.
 | `manifest.json`, `icons/` | install-as-an-app settings and icons |
 | `sw.js` | service worker for offline use |
 | `supabase/schema.sql` | tables and row level security policies |
+| `supabase/functions/delete-account` | Edge Function used by Danger zone → Delete account |
 | `tests/` | the end-to-end suite and its mock Supabase |
 
 Every icon is inline SVG drawn in the page — no emoji in the interface, nothing

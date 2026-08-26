@@ -454,6 +454,42 @@ function seed(page, opts = {}) {
   ok('merge brings in the backup goals', names.includes('Electric bike'), names.replace(/\n/g, ' | '));
   await ctx4.close();
 
+  // ---------------------------------------------------------------- delete account
+  section('delete account');
+  const ctx7 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx7.addInitScript(m => { window.STASH_CONFIG = { url: m, anonKey: 'test-anon-key-aaaaaaaaaaaaaaaaaaa' }; }, MOCK);
+  const p7 = await ctx7.newPage();
+  p7.on('pageerror', e => errors.push('delete: ' + e.message));
+  await p7.goto(APP); await p7.waitForTimeout(300);
+  ok('delete row hidden while signed out', !(await p7.locator('#deleteAcctRow').isVisible()));
+  await p7.click('#loginSkip'); await p7.waitForTimeout(250);
+  await p7.fill('#obName', 'Camera'); await p7.fill('#obTarget', '500'); await p7.click('#obStartBtn');
+  await p7.waitForTimeout(300);
+  await p7.click('.tab[data-scr="set"]'); await p7.waitForTimeout(200);
+  await p7.fill('#email', 'me@example.com'); await p7.fill('#pass', 'secret123');
+  await p7.click('#signInBtn'); await p7.waitForTimeout(1500);
+  ok('delete row appears once signed in', await p7.locator('#deleteAcctRow').isVisible());
+
+  await p7.click('#deleteAcctBtn'); await p7.waitForTimeout(250);
+  ok('confirm button starts disabled', await p7.locator('#deleteAcctConfirmBtn').isDisabled());
+  await p7.fill('#deleteAcctConfirm', 'please');
+  ok('wrong text keeps it disabled', await p7.locator('#deleteAcctConfirmBtn').isDisabled());
+  await p7.fill('#deleteAcctConfirm', 'delete');
+  ok('typing it (case-insensitively) enables it', !(await p7.locator('#deleteAcctConfirmBtn').isDisabled()));
+  await p7.click('[data-close="deleteAcctSheet"]'); await p7.waitForTimeout(200);
+  ok('cancel backs out without deleting anything', await p7.locator('#deleteAcctRow').isVisible());
+
+  await p7.click('#deleteAcctBtn'); await p7.waitForTimeout(200);
+  await p7.fill('#deleteAcctConfirm', 'DELETE');
+  await p7.click('#deleteAcctConfirmBtn'); await p7.waitForTimeout(600);
+  ok('account deletion drops back to the login screen', await p7.locator('#login').isVisible());
+  eq('and confirms', await p7.textContent('#toastTxt'), 'Account deleted');
+  eq('local data is wiped, not just the session', await p7.textContent('#savedTxt'), '—');
+  const afterDelete = await peek();
+  eq('the goal is gone from the server too', afterDelete.goals.length, 0);
+  eq('and its entries with it', afterDelete.entries.length, 0);
+  await ctx7.close();
+
   // ---------------------------------------------------------------- signing out
   section('signing out');
   await p2.click('.tab[data-scr="set"]'); await p2.waitForTimeout(200);

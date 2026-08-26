@@ -49,6 +49,12 @@ const api = http.createServer((req, res) => {
       }
       return send(res, 200, { id: 'u1', email: 'me@example.com' });
     }
+    if (u.pathname === '/functions/v1/delete-account' && req.method === 'POST') {
+      if (req.headers.authorization !== 'Bearer tok') return send(res, 401, { error: 'invalid session' });
+      // stands in for the real ON DELETE CASCADE: the account is gone, so is everything in it
+      store.goals.clear(); store.entries.clear(); store.incomes.clear();
+      return send(res, 200, { ok: true });
+    }
 
     // ---- rest ----
     if (req.headers.authorization !== 'Bearer tok') return send(res, 401, { message: 'bad jwt' });

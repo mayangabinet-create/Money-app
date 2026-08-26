@@ -206,6 +206,14 @@ label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:10p
 .dot.ok{background:var(--accent2)}.dot.warn{background:#f59e0b}.dot.err{background:var(--danger)}
 .danger-link{display:block;width:100%;text-align:center;margin:14px 0 6px;background:none;border:0;
   color:var(--danger);font-size:14px;font-weight:700;cursor:pointer}
+.danger-h3{color:var(--danger) !important}
+.danger-card{border-color:var(--danger);background:color-mix(in srgb, var(--danger) 6%, var(--card))}
+.dangerrow{display:flex;align-items:center;gap:12px;padding:8px 2px}
+.dangerrow + .dangerrow{border-top:1px solid var(--line);margin-top:4px;padding-top:12px}
+.dangerrow .dangertxt{flex:1;min-width:0}
+.dangerrow .t1{font-weight:700;font-size:14px}
+.dangerrow .t2{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.dangerrow .btn{flex:none;padding:10px 16px;font-size:14px}
 .linkbtn{background:none;border:0;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;padding:8px 2px}
 .listrow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line)}
 .listrow:last-child{border-bottom:0}
@@ -418,7 +426,26 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
             <button class="btn ghost" id="importBtn">Import backup</button>
           </div>
           <input type="file" id="importFile" accept="application/json" style="display:none">
-          <button class="danger-link" id="resetAll">Reset everything and delete history</button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3 class="danger-h3">Danger zone</h3>
+        <div class="card danger-card">
+          <div class="dangerrow">
+            <div class="dangertxt">
+              <div class="t1">Reset everything</div>
+              <div class="t2">Deletes every goal and entry on this device, and in the cloud if signed in. Your account itself stays.</div>
+            </div>
+            <button class="btn danger" id="resetAll">Reset</button>
+          </div>
+          <div class="dangerrow" id="deleteAcctRow" style="display:none">
+            <div class="dangertxt">
+              <div class="t1">Delete account</div>
+              <div class="t2">Permanently deletes your account and everything in it. This cannot be undone.</div>
+            </div>
+            <button class="btn danger" id="deleteAcctBtn">Delete</button>
+          </div>
         </div>
       </div>
     </section>
@@ -571,6 +598,21 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
       <button class="btn" id="ieSave">Save</button>
     </div>
     <button class="danger-link" id="ieDelete">Remove</button>
+  </div>
+</div>
+
+<!-- DELETE ACCOUNT CONFIRMATION -->
+<div class="overlay" id="deleteAcctSheet">
+  <div class="sheet">
+    <h3>Delete your account?</h3>
+    <p class="hint">This permanently deletes your account and every goal, entry and income in
+      it — on this device and in the cloud. There is no undo.</p>
+    <label for="deleteAcctConfirm">Type DELETE to confirm</label>
+    <input class="fld" id="deleteAcctConfirm" autocomplete="off" autocapitalize="off" placeholder="DELETE">
+    <div class="sheetbtns">
+      <button class="btn ghost" data-close="deleteAcctSheet">Cancel</button>
+      <button class="btn danger" id="deleteAcctConfirmBtn" disabled>Delete my account</button>
+    </div>
   </div>
 </div>
 
@@ -900,6 +942,7 @@ function paintSync(){
   $('#authBox').style.display = (configured() && !session) ? '' : 'none';
   $('#acctBox').style.display = session ? '' : 'none';
   $('#keyBox').style.display  = configured() ? 'none' : '';
+  $('#deleteAcctRow').style.display = session ? '' : 'none';
   if(!configured() && !$('#projUrl').value) $('#projUrl').value = baseUrl();
   if(session) $('#acctHint').textContent = 'Signed in as ' + (session.email || 'your account') + '.';
 }
@@ -1408,6 +1451,40 @@ $('#resetAll').onclick = () => {
   obDismissed = false;
   save(); render(); onboardCheck(); syncSoon();
 };
+
+/* ---- delete account: irreversible, needs the service key, so it runs
+   server-side in the delete-account Edge Function (supabase/functions/) ---- */
+$('#deleteAcctBtn').onclick = () => {
+  $('#deleteAcctConfirm').value = '';
+  $('#deleteAcctConfirmBtn').disabled = true;
+  $('#deleteAcctConfirmBtn').textContent = 'Delete my account';
+  openSheet('deleteAcctSheet');
+  setTimeout(() => $('#deleteAcctConfirm').focus(), 60);
+};
+$('#deleteAcctConfirm').oninput = e => {
+  $('#deleteAcctConfirmBtn').disabled = e.target.value.trim().toUpperCase() !== 'DELETE';
+};
+$('#deleteAcctConfirmBtn').onclick = async () => {
+  const btn = $('#deleteAcctConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  try{
+    await authed('/functions/v1/delete-account', { method:'POST' });
+    liveStop();
+    setSession(null);
+    localStorage.removeItem(SKIP);
+    localStorage.removeItem(KEY);
+    db = clone(def);
+    obDismissed = false;
+    save(); render(); paintSync(); onboardCheck();
+    closeSheet('deleteAcctSheet');
+    loginMode = 'in'; openLogin();
+    toast('Account deleted');
+  }catch(e){
+    toast(e.message || 'Could not delete the account');
+    btn.disabled = false; btn.textContent = 'Delete my account';
+  }
+};
+
 $('#exportBtn').onclick = () => {
   const blob = new Blob([JSON.stringify(db,null,2)], { type:'application/json' });
   const a = document.createElement('a');
