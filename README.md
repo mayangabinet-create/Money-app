@@ -120,10 +120,13 @@ npm test
 ```
 
 `npm test` starts a static server and a mock Supabase, drives the real page in
-Chromium, and prints a PASS/FAIL line per check (91 of them: onboarding, keypad,
-multiple goals, editing, day stats, both charts, sync, a second device, offline
-queueing, layout at three screen sizes, and upgrading data saved by the first
-version). It exits non-zero if anything fails.
+Chromium, and prints a PASS/FAIL line per check — 131 of them: the login screen,
+onboarding, the keypad, multiple goals, editing (including an edit saved right
+after a sync pull), day stats, all three charts, sources, expected income and its
+currency, search and filtering, sync, live updates over a mock realtime socket, a
+second device, signing out, offline queueing, backup merge and replace, layout at
+three screen sizes, and upgrading data saved by the first version. It exits
+non-zero if anything fails.
 
 ## Files
 
