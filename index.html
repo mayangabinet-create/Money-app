@@ -229,6 +229,12 @@ label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:10p
 .sheetbtns .btn{flex:1}
 
 /* ---------- onboarding ---------- */
+#login{position:fixed;inset:0;background:var(--bg);z-index:45;display:none;overflow-y:auto}
+#login.on{display:block}
+.loginwrap{padding-top:calc(env(safe-area-inset-top) + 56px)}
+.loginmark{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:900;margin-bottom:28px}
+.loginmark .ic-svg{width:26px;height:26px;color:var(--accent)}
+.loginskip{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
 #onboard{position:fixed;inset:0;background:var(--bg);z-index:40;display:none;overflow-y:auto}
 #onboard.on{display:block}
 .obwrap{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 40px) 22px 40px}
@@ -568,6 +574,42 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
   </div>
 </div>
 
+<!-- LOGIN -->
+<div id="login">
+  <div class="obwrap loginwrap">
+    <div class="loginmark">
+      <svg class="ic-svg" aria-hidden="true"><use href="#i-goal"/></svg>
+      <span>Stash</span>
+    </div>
+    <h2 class="big" id="loginTitle">Sign in</h2>
+    <p id="loginBlurb">Your goals follow you to any device. Everything keeps working offline.</p>
+
+    <div id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input class="fld" id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com">
+      <label for="loginPass">Password</label>
+      <input class="fld" id="loginPass" type="password" autocomplete="current-password" placeholder="at least 6 characters">
+      <button class="btn block" id="loginGo">Sign in</button>
+      <button class="btn ghost block" id="loginSwap">Create an account instead</button>
+      <button class="linkbtn" id="loginForgot" style="width:100%">Forgot password?</button>
+    </div>
+
+    <div id="loginConnect" style="display:none">
+      <p class="hint" style="margin-bottom:6px">Connect a Supabase project to sync. You can also skip this and
+        save on this device only.</p>
+      <label for="loginUrl">Project URL</label>
+      <input class="fld" id="loginUrl" placeholder="https://xxxx.supabase.co">
+      <label for="loginKey">Anon key</label>
+      <input class="fld" id="loginKey" placeholder="paste the anon / publishable key">
+      <button class="btn block" id="loginConnectGo">Connect</button>
+    </div>
+
+    <div class="loginskip">
+      <button class="linkbtn" id="loginSkip">Use without an account</button>
+    </div>
+  </div>
+</div>
+
 <!-- ONBOARDING -->
 <div id="onboard">
   <div class="obwrap">
@@ -854,7 +896,51 @@ function paintSync(){
   if(session) $('#acctHint').textContent = 'Signed in as ' + (session.email || 'your account') + '.';
 }
 
-$('#syncPill').onclick = () => go('set');
+/* ---- the login screen ---- */
+const SKIP = 'stash.skiplogin';
+let loginMode = 'in';
+
+function paintLogin(){
+  const up = loginMode === 'up';
+  $('#loginTitle').textContent = up ? 'Create an account' : 'Sign in';
+  $('#loginBlurb').textContent = up
+    ? 'One account keeps every device in step. You can still use the app without one.'
+    : 'Your goals follow you to any device. Everything keeps working offline.';
+  $('#loginGo').textContent = up ? 'Create account' : 'Sign in';
+  $('#loginSwap').textContent = up ? 'I already have an account' : 'Create an account instead';
+  $('#loginPass').setAttribute('autocomplete', up ? 'new-password' : 'current-password');
+  $('#loginForgot').style.display = up ? 'none' : '';
+  $('#loginForm').style.display = configured() ? '' : 'none';
+  $('#loginConnect').style.display = configured() ? 'none' : '';
+  if(!configured() && !$('#loginUrl').value) $('#loginUrl').value = baseUrl();
+}
+function openLogin(){ paintLogin(); $('#login').classList.add('on'); }
+function closeLogin(){ $('#login').classList.remove('on'); }
+function loginCheck(){
+  if(!session && !localStorage.getItem(SKIP)) openLogin(); else closeLogin();
+}
+$('#loginSwap').onclick = () => { loginMode = loginMode === 'in' ? 'up' : 'in'; paintLogin(); };
+$('#loginGo').onclick = () => auth(loginMode, '#loginEmail', '#loginPass', $('#loginGo'));
+$('#loginForgot').onclick = () => recover('#loginEmail');
+$('#loginSkip').onclick = () => {
+  localStorage.setItem(SKIP, '1');
+  closeLogin(); onboardCheck();
+  toast('Saved on this device — you can sign in any time');
+};
+$('#loginConnectGo').onclick = () => {
+  const u = $('#loginUrl').value.trim().replace(/\/+$/,''), k = $('#loginKey').value.trim();
+  if(u && !/^https:\/\/.+/.test(u)){ toast('The URL should start with https://'); return; }
+  if(k.length < 20){ toast('That key looks too short'); return; }
+  if(u) localStorage.setItem(URLOVR, u);
+  localStorage.setItem(KEYOVR, k);
+  paintSync(); paintLogin(); toast('Connected');
+};
+addEventListener('keydown', e => {
+  if(e.key === 'Enter' && $('#login').classList.contains('on') && $('#loginForm').style.display !== 'none') $('#loginGo').click();
+});
+
+// the pill is the way back to the login screen when signed out
+$('#syncPill').onclick = () => { if(session) go('set'); else openLogin(); };
 $('#saveKeyBtn').onclick = () => {
   const k = $('#anonKey').value.trim();
   const u = $('#projUrl').value.trim().replace(/\/+$/,'');
@@ -865,41 +951,45 @@ $('#saveKeyBtn').onclick = () => {
   paintSync(); toast('Connected — now create an account or sign in');
 };
 
-async function auth(kind){
-  const email = $('#email').value.trim(), password = $('#pass').value;
+async function auth(kind, emailSel = '#email', passSel = '#pass', btn = null){
+  const email = $(emailSel).value.trim(), password = $(passSel).value;
   if(!email || password.length < 6){ toast('Email and a password of 6+ characters'); return; }
-  const btn = kind === 'up' ? $('#signUpBtn') : $('#signInBtn');
-  btn.disabled = true;
+  if(btn) btn.disabled = true;
   try{
     const res = await authApi(kind === 'up' ? '/signup' : '/token?grant_type=password', { email, password });
     if(res && res.access_token){
       storeSession({ ...res, user:{ email } });
-      $('#pass').value = '';
+      $(passSel).value = '';
       toast(kind === 'up' ? 'Account created' : 'Signed in');
+      closeLogin();
       await sync();
       liveConnect();
+      onboardCheck();
     } else {
       toast('Check your email to confirm, then sign in');
     }
   }catch(e){
     toast(e.message || 'Could not sign in');
   }finally{
-    btn.disabled = false;
+    if(btn) btn.disabled = false;
   }
 }
-$('#signUpBtn').onclick = () => auth('up');
-$('#signInBtn').onclick = () => auth('in');
-$('#forgotBtn').onclick = async () => {
-  const email = $('#email').value.trim();
-  if(!email){ toast('Type your email first'); $('#email').focus(); return; }
+$('#signUpBtn').onclick = () => auth('up', '#email', '#pass', $('#signUpBtn'));
+$('#signInBtn').onclick = () => auth('in', '#email', '#pass', $('#signInBtn'));
+async function recover(sel){
+  const email = $(sel).value.trim();
+  if(!email){ toast('Type your email first'); $(sel).focus(); return; }
   try{
     await authApi('/recover', { email });
     toast('Reset link sent — check your email');
   }catch(e){ toast(e.message || 'Could not send the reset link'); }
-};
+}
+$('#forgotBtn').onclick = () => recover('#email');
 $('#syncNowBtn').onclick = sync;
 $('#signOutBtn').onclick = () => {
   liveStop(); setSession(null); syncErr = '';
+  localStorage.removeItem(SKIP);
+  loginMode = 'in'; openLogin();
   toast('Signed out — data stays on this device');
 };
 
@@ -1257,8 +1347,9 @@ addEventListener('keydown', e => {
    onboarding / reset / backup
    ============================================================ */
 let obDismissed = false;
-const onboardCheck = () => $('#onboard').classList.toggle('on', !db.goals.some(g => !g.completedAt) && !obDismissed);
-$('#obSignIn').onclick = () => { obDismissed = true; onboardCheck(); go('set'); $('#email').focus(); };
+const onboardCheck = () => $('#onboard').classList.toggle('on',
+  !db.goals.some(g => !g.completedAt) && !obDismissed && !$('#login').classList.contains('on'));
+$('#obSignIn').onclick = () => { loginMode = 'in'; openLogin(); setTimeout(() => $('#loginEmail').focus(), 60); };
 $('#obStartBtn').onclick = () => {
   const t = parseFloat($('#obTarget').value);
   if(!(t > 0)){ toast('Enter a price above zero'); $('#obTarget').focus(); return; }
@@ -1798,7 +1889,7 @@ function confetti(){
 /* ============================================================
    boot
    ============================================================ */
-applyTheme(); render(); paintSync(); onboardCheck(); startPolling();
+applyTheme(); render(); paintSync(); loginCheck(); onboardCheck(); startPolling();
 if(session){ sync(); liveConnect(); }
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').then(reg => {

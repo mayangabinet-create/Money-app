@@ -56,10 +56,28 @@ function seed(page, opts = {}) {
   page.on('pageerror', e => errors.push(e.message));
   await fetch(PEEK + '/reset');
 
+  // ---------------------------------------------------------------- login screen
+  section('login screen');
+  await page.goto(APP);
+  await page.waitForTimeout(400);
+  ok('first run shows the login screen', await page.locator('#login').isVisible());
+  ok('onboarding waits behind it', !(await page.locator('#onboard').isVisible()));
+  ok('sign in is the default', (await page.textContent('#loginGo')).trim() === 'Sign in');
+  await page.click('#loginSwap'); await page.waitForTimeout(150);
+  eq('it swaps to sign-up', (await page.textContent('#loginGo')).trim(), 'Create account');
+  ok('sign-up hides the reset link', !(await page.locator('#loginForgot').isVisible()));
+  await page.click('#loginSwap'); await page.waitForTimeout(150);
+  await page.fill('#loginEmail', 'nobody@example.com'); await page.fill('#loginPass', 'wrongpass');
+  await page.click('#loginGo'); await page.waitForTimeout(500);
+  eq('a bad password is reported', await page.textContent('#toastTxt'), 'Invalid login credentials');
+  ok('and the screen stays put', await page.locator('#login').isVisible());
+  await page.click('#loginForgot'); await page.waitForTimeout(400);
+  eq('reset link can be sent from here', await page.textContent('#toastTxt'), 'Reset link sent — check your email');
+  await page.click('#loginSkip'); await page.waitForTimeout(300);
+  ok('skipping goes straight into the app', !(await page.locator('#login').isVisible()));
+
   // ---------------------------------------------------------------- onboarding
   section('onboarding');
-  await page.goto(APP);
-  await page.waitForTimeout(300);
   ok('first run shows onboarding', await page.locator('#onboard').isVisible());
   ok('sign-in escape hatch exists', await page.locator('#obSignIn').isVisible());
   await page.fill('#obName', 'Headphones');
@@ -212,10 +230,12 @@ function seed(page, opts = {}) {
   await ctx2.addInitScript(m => { window.STASH_CONFIG = { url: m, anonKey: 'test-anon-key-aaaaaaaaaaaaaaaaaaa' }; }, MOCK);
   const p2 = await ctx2.newPage();
   p2.on('pageerror', e => errors.push('device2: ' + e.message));
-  await p2.goto(APP); await p2.waitForTimeout(300);
-  await p2.click('#obSignIn'); await p2.waitForTimeout(200);
-  await p2.fill('#email', 'me@example.com'); await p2.fill('#pass', 'secret123');
-  await p2.click('#signInBtn'); await p2.waitForTimeout(1600);
+  await p2.goto(APP); await p2.waitForTimeout(400);
+  ok('a new device lands on the login screen', await p2.locator('#login').isVisible());
+  await p2.fill('#loginEmail', 'me@example.com'); await p2.fill('#loginPass', 'secret123');
+  await p2.click('#loginGo'); await p2.waitForTimeout(1800);
+  ok('signing in dismisses the login screen', !(await p2.locator('#login').isVisible()));
+  ok('and no onboarding, the goals came down', !(await p2.locator('#onboard').isVisible()));
   eq('goal pulled down', await p2.textContent('#goalName'), 'Electric bike');
   eq('total matches device one', await p2.textContent('#savedTxt'), await page.textContent('#savedTxt'));
   await p2.click('.tab[data-scr="set"]'); await p2.waitForTimeout(200);
@@ -351,7 +371,8 @@ function seed(page, opts = {}) {
   const ctx4 = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const p4 = await ctx4.newPage();
   p4.on('pageerror', e => errors.push('import: ' + e.message));
-  await p4.goto(APP); await p4.waitForTimeout(300);
+  await p4.goto(APP); await p4.waitForTimeout(400);
+  await p4.click('#loginSkip'); await p4.waitForTimeout(250);
   await p4.fill('#obName', 'Camera'); await p4.fill('#obTarget', '900');
   await p4.click('#obStartBtn'); await p4.waitForTimeout(300);
   await p4.click('.tab[data-scr="add"]');
@@ -370,6 +391,15 @@ function seed(page, opts = {}) {
   ok('merge keeps the local goal', names.includes('Camera'), names.replace(/\n/g, ' | '));
   ok('merge brings in the backup goals', names.includes('Electric bike'), names.replace(/\n/g, ' | '));
   await ctx4.close();
+
+  // ---------------------------------------------------------------- signing out
+  section('signing out');
+  await p2.click('.tab[data-scr="set"]'); await p2.waitForTimeout(200);
+  await p2.click('#signOutBtn'); await p2.waitForTimeout(400);
+  ok('signing out returns to the login screen', await p2.locator('#login').isVisible());
+  await p2.click('#loginSkip'); await p2.waitForTimeout(250);
+  ok('the data is still on the device', (await p2.textContent('#savedTxt')).length > 1);
+  await ctx2.close();
 
   // ---------------------------------------------------------------- layout
   section('layout');
@@ -410,7 +440,8 @@ function seed(page, opts = {}) {
   const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const p3 = await ctx3.newPage();
   p3.on('pageerror', e => errors.push('v1: ' + e.message));
-  await p3.goto(APP);
+  await p3.goto(APP); await p3.waitForTimeout(300);
+  await p3.click('#loginSkip'); await p3.waitForTimeout(200);
   await p3.evaluate(d => localStorage.setItem('kupa.v1', JSON.stringify({
     name: 'Old goal', target: 900, cur: '$', theme: 'light', celebrated: false, gUpdated: Date.now(),
     entries: [{ id: 'a', amount: 400, note: 'Allowance', ts: Date.now() - 2 * d },
