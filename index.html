@@ -166,6 +166,17 @@ main{flex:1;position:relative;min-height:0}
 .srcbar .track{flex:1;min-width:30px;height:10px;background:var(--chip);border-radius:999px;overflow:hidden}
 .srcbar .fill{display:block;height:100%;border-radius:999px}
 .srcbar .val{font-size:11px;font-weight:800;color:var(--muted);width:96px;text-align:right;flex:none;white-space:nowrap}
+.filters{flex:none;display:flex;gap:8px;margin-bottom:10px}
+.filters #searchBox{flex:2;min-width:0}
+.filters #monthBox{flex:1;min-width:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.showmore{width:100%;margin:12px 0 4px;padding:12px;border-radius:14px;border:1px dashed var(--line);
+  background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
 .dayrow{display:flex;justify-content:space-between;align-items:baseline;padding:14px 4px 6px;
   font-size:13px;font-weight:700;color:var(--muted)}
 .dayrow b{font-size:14px;color:var(--accent2)}
@@ -322,10 +333,16 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
       <div class="card chartcard">
         <div class="miniseg" id="chartSeg">
           <button data-c="daily" class="on">Per day</button>
+          <button data-c="month">Per month</button>
           <button data-c="total">Total so far</button>
         </div>
         <div class="chartlbl"><span id="chartName">Last 14 days</span><b id="chartTip">—</b></div>
-        <svg id="chart" class="chart" viewBox="0 0 336 138" role="img" aria-label="Savings chart"></svg>
+        <svg id="chart" class="chart" viewBox="0 0 336 138" role="img" aria-labelledby="chartName"></svg>
+        <table class="sr-only" id="chartTable"><caption>Chart data</caption><tbody></tbody></table>
+      </div>
+      <div class="filters">
+        <input class="fld" id="searchBox" type="search" placeholder="Search notes and sources">
+        <select class="fld" id="monthBox" aria-label="Filter by month"></select>
       </div>
       <div class="card chartcard" id="srcCard">
         <div class="chartlbl"><span>Where it came from</span><b id="srcTotal"></b></div>
@@ -425,6 +442,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 <div class="overlay" id="goalEdit">
   <div class="sheet">
     <h3 id="goalEditTitle">Goal</h3>
+    <input type="hidden" id="geEditing" value="">
     <label for="geName">What you want to buy</label>
     <input class="fld" id="geName" maxlength="40" placeholder="e.g. headphones, a bike, a flight">
     <div class="row2">
@@ -446,6 +464,33 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
     </div>
     <button class="linkbtn" id="geComplete" style="width:100%">Mark as finished</button>
     <button class="danger-link" id="geDelete">Delete this goal and its entries</button>
+  </div>
+</div>
+
+<!-- FINISHED GOAL SUMMARY -->
+<div class="overlay" id="goalDone">
+  <div class="sheet">
+    <h3 id="gdTitle">Finished</h3>
+    <div class="stats4" id="gdStats"></div>
+    <div id="gdSources"></div>
+    <div class="sheetbtns">
+      <button class="btn" data-close="goalDone">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT BACKUP -->
+<div class="overlay" id="importSheet">
+  <div class="sheet">
+    <h3>Load this backup?</h3>
+    <p class="hint" id="importSummary"></p>
+    <div class="sheetbtns">
+      <button class="btn ghost" data-close="importSheet">Cancel</button>
+      <button class="btn ghost" id="importMerge">Merge</button>
+      <button class="btn danger" id="importReplace">Replace</button>
+    </div>
+    <p class="hint"><b>Merge</b> keeps what you have and adds anything missing.
+      <b>Replace</b> throws away everything on this device first.</p>
   </div>
 </div>
 
@@ -486,6 +531,15 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
         <label for="ieAmount">Amount</label>
         <input class="fld" id="ieAmount" type="number" inputmode="decimal" min="1" step="any" placeholder="50">
       </div>
+      <div>
+        <label for="ieCur">Currency</label>
+        <select class="fld" id="ieCur">
+          <option value="₪">₪ Shekel</option><option value="$">$ Dollar</option>
+          <option value="€">€ Euro</option><option value="£">£ Pound</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
       <div>
         <label for="ieEvery">How often</label>
         <select class="fld" id="ieEvery">
@@ -673,7 +727,7 @@ const toRow = {
                  completed_at:g.completedAt ? new Date(g.completedAt).toISOString() : null }),
   entries: e => ({ id:e.id, goal_id:e.goalId, amount:e.amount, note:e.note || '', source:e.source || '',
                    ts:new Date(e.ts).toISOString() }),
-  incomes: i => ({ id:i.id, label:i.label, amount:i.amount, every:i.every,
+  incomes: i => ({ id:i.id, label:i.label, amount:i.amount, every:i.every, currency:i.cur || '$',
                    dow:i.every === 'week' ? i.dow : null, dom:i.every === 'month' ? i.dom : null, active:i.active !== false })
 };
 const fromRow = {
@@ -682,8 +736,8 @@ const fromRow = {
                  createdAt:new Date(r.created_at).getTime(), updatedAt:new Date(r.updated_at).getTime() }),
   entries: r => ({ id:r.id, goalId:r.goal_id, amount:Number(r.amount), note:r.note || '', source:r.source || '',
                    ts:new Date(r.ts).getTime(), updatedAt:new Date(r.updated_at).getTime() }),
-  incomes: r => ({ id:r.id, label:r.label, amount:Number(r.amount), every:r.every, dow:r.dow, dom:r.dom,
-                   active:r.active, updatedAt:new Date(r.updated_at).getTime() })
+  incomes: r => ({ id:r.id, label:r.label, amount:Number(r.amount), every:r.every, cur:r.currency || '$',
+                   dow:r.dow, dom:r.dom, active:r.active, updatedAt:new Date(r.updated_at).getTime() })
 };
 const TABLES = [['goals','stash_goals'], ['entries','stash_entries'], ['incomes','stash_incomes']];
 
@@ -728,7 +782,7 @@ async function sync(){
 const syncSoon = () => { clearTimeout(pendingT); pendingT = setTimeout(sync, 900); };
 
 /* ---- staying current: realtime when it connects, polling as the safety net ---- */
-let ws = null, wsBeat = null, wsRef = 0, poll = null;
+let ws = null, wsBeat = null, wsRef = 0, poll = null, live = false;
 
 function liveConnect(){
   if(ws || !session || !configured() || !('WebSocket' in window)) return;
@@ -753,16 +807,19 @@ function liveConnect(){
   };
   ws.onmessage = m => {
     let d; try{ d = JSON.parse(m.data); }catch(e){ return; }
+    if(d.event === 'phx_reply' && d.payload && d.payload.status === 'ok' && d.topic === 'realtime:stash'){
+      live = true; paintSync();
+    }
     if(d.event === 'postgres_changes') syncSoon();
   };
   ws.onclose = () => {
-    ws = null; clearInterval(wsBeat); wsBeat = null;
+    ws = null; live = false; clearInterval(wsBeat); wsBeat = null; paintSync();
     if(session) setTimeout(liveConnect, 5000);
   };
   ws.onerror = () => { try{ ws && ws.close(); }catch(e){} };
 }
 function liveStop(){
-  clearInterval(wsBeat); wsBeat = null;
+  live = false; clearInterval(wsBeat); wsBeat = null;
   if(ws){ const s = ws; ws = null; try{ s.onclose = null; s.close(); }catch(e){} }
 }
 function startPolling(){
@@ -781,7 +838,11 @@ function paintSync(){
   else if(syncing){ cls = 'warn'; txt = 'Syncing…'; short = 'Syncing…'; }
   else if(syncErr === 'offline'){ cls = 'warn'; txt = "Offline — will sync when you're back"; short = 'Offline'; }
   else if(syncErr){ cls = 'err'; txt = 'Sync problem: ' + syncErr; short = 'Sync issue'; }
-  else { cls = 'ok'; txt = 'Synced' + (db.lastSync ? ' · ' + when(db.lastSync) : ''); short = 'Synced'; }
+  else {
+    cls = 'ok';
+    txt = 'Synced' + (db.lastSync ? ' · ' + when(db.lastSync) : '') + (live ? ' · live' : ' · checks every 30s');
+    short = 'Synced';
+  }
   dot.className = 'dot ' + cls;
   st.textContent = txt;
   pill.querySelector('use').setAttribute('href', session && !syncErr ? '#i-cloud' : '#i-phone');
@@ -870,7 +931,9 @@ $('#themeBtn').onclick = () => { db.theme = db.theme === 'dark' ? 'light' : 'dar
 /* ============================================================
    goals
    ============================================================ */
-let editingGoal = null;
+// sheets hold ids, never object references: a sync pull replaces every object in
+// db.*, and a stale reference would make the save silently do nothing
+let editingGoalId = null;
 
 function newGoal(name, target, currency){
   const g = { id:uid(), name:name || 'My goal', target, cur:currency, celebrated:false,
@@ -881,22 +944,25 @@ function newGoal(name, target, currency){
 }
 
 function openGoalEditor(g){
-  editingGoal = g;
+  editingGoalId = g ? g.id : null;
   $('#goalEditTitle').textContent = g ? 'Edit goal' : 'New goal';
   $('#geName').value = g ? g.name : '';
   $('#geTarget').value = g ? g.target : '';
   $('#geCur').value = g ? g.cur : cur();
   $('#geComplete').style.display = g && !g.completedAt ? '' : 'none';
   $('#geDelete').style.display = g ? '' : 'none';
+  $('#geEditing').value = g ? g.id : '';
   openSheet('goalEdit');
 }
 $('#geSave').onclick = () => {
   const t = parseFloat($('#geTarget').value);
   if(!(t > 0)){ toast('Target must be more than zero'); $('#geTarget').focus(); return; }
   const name = $('#geName').value.trim(), c = $('#geCur').value;
-  if(editingGoal){
-    Object.assign(editingGoal, { name:name || 'My goal', target:t, cur:c, updatedAt:Date.now() });
-    if(sumOf(editingGoal.id) < t) editingGoal.celebrated = false;
+  const g = editingGoalId ? goalById(editingGoalId) : null;
+  if(editingGoalId && !g){ closeSheet('goalEdit'); toast('That goal is no longer here'); return; }
+  if(g){
+    Object.assign(g, { name:name || 'My goal', target:t, cur:c, updatedAt:Date.now() });
+    if(sumOf(g.id) < t) g.celebrated = false;
     save(); render(); syncSoon();
   } else {
     newGoal(name, t, c);
@@ -904,17 +970,19 @@ $('#geSave').onclick = () => {
   closeSheet('goalEdit'); closeSheet('goalSheet'); toast('Saved');
 };
 $('#geComplete').onclick = () => {
-  if(!editingGoal) return;
-  editingGoal.completedAt = Date.now(); editingGoal.updatedAt = Date.now();
+  const target = goalById(editingGoalId);
+  if(!target){ closeSheet('goalEdit'); return; }
+  target.completedAt = Date.now(); target.updatedAt = Date.now();
   const next = db.goals.find(g => !g.completedAt);
   db.activeId = next ? next.id : '';
   save(); render(); onboardCheck(); syncSoon();
   closeSheet('goalEdit'); closeSheet('goalSheet'); toast('Marked as finished');
 };
 $('#geDelete').onclick = () => {
-  if(!editingGoal) return;
-  if(!confirm('Delete "' + editingGoal.name + '" and every entry in it?')) return;
-  const gid = editingGoal.id;
+  const target = goalById(editingGoalId);
+  if(!target){ closeSheet('goalEdit'); return; }
+  if(!confirm('Delete "' + target.name + '" and every entry in it?')) return;
+  const gid = target.id;
   db.entries.filter(e => e.goalId === gid).forEach(e => db.deleted.entries.push(e.id));
   db.entries = db.entries.filter(e => e.goalId !== gid);
   db.goals = db.goals.filter(g => g.id !== gid);
@@ -947,9 +1015,39 @@ function renderGoalPicker(){
     (open.map(g => goalRow(g, true)).join('') || '<div class="empty">No goals yet.</div>') +
     (done.length ? '<h3 style="margin-top:16px;font-size:14px">Finished</h3>' + done.map(g => goalRow(g, true)).join('') : '');
 }
+function showGoalSummary(g){
+  const es = entriesOf(g.id), sum = sumOf(g.id);
+  const first = es.length ? Math.min(...es.map(e => e.ts)) : g.createdAt;
+  const last = g.completedAt || (es.length ? Math.max(...es.map(e => e.ts)) : Date.now());
+  const days = Math.max(1, Math.round((last - first) / DAY));
+  const ins = es.filter(e => e.amount > 0);
+  const tile = (k,v) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#gdTitle').textContent = g.name;
+  $('#gdStats').innerHTML =
+    tile('Saved', g.cur + sum.toLocaleString('en-US')) +
+    tile('Took', days + (days === 1 ? ' day' : ' days')) +
+    tile('Deposits', ins.length) +
+    tile('Per week', g.cur + Math.round(sum / days * 7).toLocaleString('en-US'));
+  const m = new Map();
+  ins.forEach(e => { const k = e.source || 'Unlabelled'; m.set(k, (m.get(k) || 0) + e.amount); });
+  const rows = [...m.entries()].sort((a,b) => b[1] - a[1]).slice(0,6);
+  const top = rows.length ? rows[0][1] : 1;
+  const totalIn = rows.reduce((a,r) => a + r[1], 0) || 1;
+  $('#gdSources').innerHTML = rows.length ? '<h3 style="font-size:14px;margin:16px 0 4px">Where it came from</h3>' +
+    rows.map(([name,val],i) => `
+      <div class="srcbar">
+        <span class="nm">${esc(name)}</span>
+        <span class="track"><i class="fill" style="width:${Math.max(4, val/top*100)}%;background:${CVARS[i]}"></i></span>
+        <span class="val">${g.cur}${val.toLocaleString('en-US')} · ${Math.round(val/totalIn*100)}%</span>
+      </div>`).join('') : '';
+  openSheet('goalDone');
+}
+
 function pickerClick(e){
   const pick = e.target.closest('[data-goal]');
   if(pick){
+    const g = goalById(pick.dataset.goal);
+    if(g && g.completedAt){ showGoalSummary(g); return; }
     db.activeId = pick.dataset.goal; save(); render();
     closeSheet('goalSheet'); go('home'); return;
   }
@@ -969,7 +1067,9 @@ function addEntry(amount, note, source){
                     ts:Date.now(), updatedAt:Date.now() });
   save(); render(); syncSoon();
   if(before < g.target && sumOf(g.id) >= g.target && !g.celebrated){
-    g.celebrated = true; g.updatedAt = Date.now(); save(); confetti(); toast('Goal reached!'); go('home');
+    g.celebrated = true; g.updatedAt = Date.now(); save(); confetti(); go('home');
+    toast('Goal reached!', () => showGoalSummary(g));
+    $('#undoBtn').textContent = 'See summary';
   } else {
     toast((amount > 0 ? 'Added ' : 'Took out ') + fmt(Math.abs(amount)));
   }
@@ -987,10 +1087,11 @@ function removeEntry(id){
   });
 }
 
-let editingEntry = null;
+let editingEntryId = null;
+const entryById = id => db.entries.find(x => x.id === id);
 function openEntryEditor(id){
-  const e = db.entries.find(x => x.id === id); if(!e) return;
-  editingEntry = e;
+  const e = entryById(id); if(!e) return;
+  editingEntryId = id;
   $('#eeAmount').value = e.amount;
   $('#eeDate').value = dayKey(e.ts);
   $('#eeNote').value = e.note || '';
@@ -1000,23 +1101,31 @@ function openEntryEditor(id){
   openSheet('entryEdit');
 }
 $('#eeSave').onclick = () => {
-  if(!editingEntry) return;
+  const id = editingEntryId, target = entryById(id);
+  if(!target){ closeSheet('entryEdit'); toast('That entry is no longer here'); return; }
   const v = parseFloat($('#eeAmount').value);
   if(!v){ toast('Amount cannot be zero'); return; }
   const [y,m,d] = $('#eeDate').value.split('-').map(Number);
-  const old = new Date(editingEntry.ts);
-  const ts = (y && m && d) ? new Date(y, m-1, d, old.getHours(), old.getMinutes()).getTime() : editingEntry.ts;
-  Object.assign(editingEntry, { amount:v, ts, note:$('#eeNote').value.trim(),
-                                source:$('#eeSource').value, updatedAt:Date.now() });
-  save(); render(); syncSoon(); closeSheet('entryEdit'); toast('Entry updated');
+  const old = new Date(target.ts);
+  const ts = (y && m && d) ? new Date(y, m-1, d, old.getHours(), old.getMinutes()).getTime() : target.ts;
+  const before = { amount:target.amount, ts:target.ts, note:target.note, source:target.source };
+  Object.assign(target, { amount:v, ts, note:$('#eeNote').value.trim(),
+                          source:$('#eeSource').value, updatedAt:Date.now() });
+  save(); render(); syncSoon(); closeSheet('entryEdit');
+  toast('Entry updated', () => {
+    const again = entryById(id);
+    if(!again) return;
+    Object.assign(again, before, { updatedAt:Date.now() });
+    save(); render(); syncSoon();
+  });
 };
 $('#eeDelete').onclick = () => {
-  if(!editingEntry) return;
-  const id = editingEntry.id;
+  const id = editingEntryId;
   closeSheet('entryEdit');
-  removeEntry(id);
+  if(id) removeEntry(id);
 };
 $('#history').onclick = e => {
+  if(e.target.closest('#showMore')){ dayLimit += 30; render(); return; }
   const del = e.target.closest('.del');
   if(del){ removeEntry(del.dataset.id); return; }
   const row = e.target.closest('[data-entry]');
@@ -1026,11 +1135,13 @@ $('#history').onclick = e => {
 /* ============================================================
    expected income
    ============================================================ */
-let editingIncome = null;
+let editingIncomeId = null;
+const incomeById = id => db.incomes.find(i => i.id === id);
 function openIncomeEditor(inc){
-  editingIncome = inc;
+  editingIncomeId = inc ? inc.id : null;
   $('#ieLabel').value = inc ? inc.label : '';
   $('#ieAmount').value = inc ? inc.amount : '';
+  $('#ieCur').value = inc ? (inc.cur || '$') : cur();
   $('#ieEvery').value = inc ? inc.every : 'week';
   $('#ieDow').value = inc && inc.dow != null ? inc.dow : 5;
   $('#ieDom').value = inc && inc.dom != null ? inc.dom : 1;
@@ -1049,18 +1160,20 @@ $('#ieSave').onclick = () => {
   const amt = parseFloat($('#ieAmount').value);
   if(!(amt > 0)){ toast('Amount must be more than zero'); return; }
   const every = $('#ieEvery').value;
-  const data = { label:$('#ieLabel').value.trim() || 'Income', amount:amt, every,
+  const data = { label:$('#ieLabel').value.trim() || 'Income', amount:amt, every, cur:$('#ieCur').value,
                  dow:every === 'week' ? Number($('#ieDow').value) : null,
                  dom:every === 'month' ? Math.min(31, Math.max(1, Number($('#ieDom').value) || 1)) : null,
                  active:true, updatedAt:Date.now() };
-  if(editingIncome) Object.assign(editingIncome, data);
+  const existing = editingIncomeId ? incomeById(editingIncomeId) : null;
+  if(editingIncomeId && !existing){ closeSheet('incomeEdit'); toast('That entry is no longer here'); return; }
+  if(existing) Object.assign(existing, data);
   else db.incomes.push({ id:uid(), ...data });
   save(); render(); syncSoon(); closeSheet('incomeEdit'); toast('Saved');
 };
 $('#ieDelete').onclick = () => {
-  if(!editingIncome) return;
-  db.incomes = db.incomes.filter(i => i.id !== editingIncome.id);
-  db.deleted.incomes.push(editingIncome.id);
+  if(!editingIncomeId) return;
+  db.incomes = db.incomes.filter(i => i.id !== editingIncomeId);
+  db.deleted.incomes.push(editingIncomeId);
   save(); render(); syncSoon(); closeSheet('incomeEdit'); toast('Removed');
 };
 $('#incomeList').onclick = e => {
@@ -1070,9 +1183,11 @@ $('#incomeList').onclick = e => {
 
 const DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const ordinal = n => n + (['th','st','nd','rd'][(n % 100 - 20) % 10] || ['th','st','nd','rd'][n % 100] || 'th');
-// what the declared incomes are worth per day
-function plannedPerDay(){
-  return db.incomes.filter(i => i.active !== false)
+// what the declared incomes are worth per day — only those in the goal's own
+// currency count, since the app does no conversion
+function plannedPerDay(currency){
+  return db.incomes
+    .filter(i => i.active !== false && (i.cur || '$') === currency)
     .reduce((a,i) => a + (i.every === 'week' ? i.amount / 7 : i.amount / 30.44), 0);
 }
 
@@ -1172,6 +1287,7 @@ $('#exportBtn').onclick = () => {
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 $('#importBtn').onclick = () => $('#importFile').click();
+let incoming = null;   // a parsed backup waiting for replace-or-merge
 $('#importFile').onchange = e => {
   const f = e.target.files[0]; if(!f) return;
   const rd = new FileReader();
@@ -1180,15 +1296,50 @@ $('#importFile').onchange = e => {
       const d = JSON.parse(rd.result);
       const next = d.v === 2 ? { ...clone(def), ...d } : migrateV1(d);
       if(!Array.isArray(next.entries) || !Array.isArray(next.goals)) throw new Error('bad file');
-      next.theme = db.theme;
-      const now = Date.now();
-      ['goals','entries','incomes'].forEach(k => next[k].forEach(r => r.updatedAt = now));
-      db = next;
-      save(); render(); onboardCheck(); syncSoon(); toast('Backup loaded');
+      next.deleted = { ...clone(def.deleted), ...(next.deleted || {}) };
+      incoming = next;
+      $('#importSummary').textContent =
+        `The file holds ${next.goals.length} goal${next.goals.length === 1 ? '' : 's'} and ` +
+        `${next.entries.length} entr${next.entries.length === 1 ? 'y' : 'ies'}. ` +
+        `This device has ${db.goals.length} and ${db.entries.length}.`;
+      openSheet('importSheet');
     }catch(err){ toast('That file is not a Stash backup'); }
   };
   rd.readAsText(f); e.target.value = '';
 };
+function applyImport(mode){
+  if(!incoming) return;
+  const now = Date.now();
+  if(mode === 'replace'){
+    const theme = db.theme, del = db.deleted;
+    if(session){
+      db.entries.forEach(x => del.entries.push(x.id));
+      db.goals.forEach(x => del.goals.push(x.id));
+      db.incomes.forEach(x => del.incomes.push(x.id));
+    }
+    db = { ...incoming, theme, deleted:del, lastSync:0 };
+    ['goals','entries','incomes'].forEach(k => db[k].forEach(r => r.updatedAt = now));
+  } else {
+    // keep everything here; add what is missing, and let the newer copy win
+    ['goals','entries','incomes'].forEach(k => {
+      const byId = new Map(db[k].map(r => [r.id, r]));
+      incoming[k].forEach(r => {
+        const mine = byId.get(r.id);
+        if(!mine || (r.updatedAt || 0) > (mine.updatedAt || 0)) byId.set(r.id, { ...r, updatedAt:now });
+      });
+      db[k] = [...byId.values()];
+    });
+    if(!goalById(db.activeId) && db.goals.length) db.activeId = db.goals[0].id;
+  }
+  incoming = null;
+  obDismissed = false;
+  save(); render(); onboardCheck(); syncSoon(); closeSheet('importSheet');
+  toast(mode === 'replace' ? 'Backup loaded' : 'Backup merged in');
+}
+$('#importReplace').onclick = () => {
+  if(confirm('Replace everything on this device with the backup? What is here now is lost.')) applyImport('replace');
+};
+$('#importMerge').onclick = () => applyImport('merge');
 
 /* ============================================================
    toast
@@ -1197,6 +1348,7 @@ let toastT;
 function toast(msg, undo){
   $('#toastTxt').textContent = msg;
   const ub = $('#undoBtn');
+  ub.textContent = 'Undo';
   ub.style.display = undo ? '' : 'none';
   ub.onclick = () => { undo && undo(); $('#toast').classList.remove('show'); };
   $('#toast').classList.add('show');
@@ -1255,7 +1407,7 @@ function paces(g){
   const recentDays = Math.min(14, allDays);
   const recentSum = es.filter(e => e.ts >= Date.now() - 14*DAY).reduce((a,e) => a + e.amount, 0);
   const pace14 = recentDays >= 1 ? recentSum / recentDays : 0;
-  return { left, paceAll, pace14, planned:plannedPerDay(), allDays };
+  return { left, paceAll, pace14, planned:plannedPerDay(g.cur), allDays };
 }
 const etaDate = (left, perDay) => perDay > 0 ? new Date(Date.now() + Math.ceil(left/perDay) * DAY) : null;
 const shortDate = d => d.toLocaleDateString('en-US',{ day:'numeric', month:'short' });
@@ -1263,6 +1415,21 @@ const shortDate = d => d.toLocaleDateString('en-US',{ day:'numeric', month:'shor
 /* ============================================================
    charts
    ============================================================ */
+let filterText = '', filterMonth = '', dayLimit = 30;
+$('#searchBox').oninput = e => { filterText = e.target.value; dayLimit = 30; render(); };
+$('#monthBox').onchange = e => { filterMonth = e.target.value; dayLimit = 30; render(); };
+
+function renderMonthOptions(es){
+  const months = [...new Set(es.map(e => dayKey(e.ts).slice(0,7)))].sort().reverse();
+  const opts = ['<option value="">All months</option>'].concat(months.map(m => {
+    const [y,mo] = m.split('-').map(Number);
+    const label = new Date(y, mo-1, 1).toLocaleDateString('en-US',{ month:'long', year:'numeric' });
+    return `<option value="${m}"${m === filterMonth ? ' selected' : ''}>${label}</option>`;
+  })).join('');
+  if($('#monthBox').innerHTML !== opts) $('#monthBox').innerHTML = opts;
+  if(filterMonth && !months.includes(filterMonth)){ filterMonth = ''; $('#monthBox').value = ''; }
+}
+
 let chartMode = 'daily';
 $('#chartSeg').onclick = e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -1308,13 +1475,15 @@ function dailyChart(map){
   $('#chartName').textContent = 'Last 14 days';
   $('#chart').innerHTML = out;
   showDayTip(tk, map);
+  chartTable(days.map(d => [dayLabel(d.k), signed(d.net)]));
 }
 
 /* cumulative total against the target, with a dashed projection to the finish */
 function totalChart(g, map){
   const W = 336, H = 138, TOP = 12, BASE = 112, L = 2, R = 2;
   const es = entriesOf(g.id).slice().sort((a,b) => a.ts - b.ts);
-  if(!es.length){ $('#chartName').textContent = 'Total so far'; $('#chart').innerHTML = ''; $('#chartTip').textContent = '—'; return; }
+  if(!es.length){ $('#chartName').textContent = 'Total so far'; $('#chart').innerHTML = '';
+                  $('#chartTip').textContent = '—'; chartTable([]); return; }
   const first = new Date(es[0].ts); first.setHours(0,0,0,0);
   const startMs = first.getTime();
   const todayMs = keyToDate(todayKey()).getTime();
@@ -1362,6 +1531,8 @@ function totalChart(g, map){
   $('#chart').innerHTML = out;
   $('#chartTip').textContent = 'Today · ' + fmt(sum);
   $('#chartTip').style.color = 'var(--viz-in)';
+  chartTable([['Start', fmt(0)], ['Today', fmt(sum)], ['Target', fmt(g.target)],
+              ['Projected finish', eta ? shortDate(eta) : 'unknown']]);
 }
 
 function showDayTip(k, map){
@@ -1373,7 +1544,12 @@ function showDayTip(k, map){
 $('#chart').addEventListener('pointerdown', e => {
   const h = e.target.closest('.hit'); if(!h) return;
   const g = active(); if(!g) return;
-  if(chartMode === 'daily') showDayTip(h.dataset.k, byDay(entriesOf(g.id)));
+  if(chartMode === 'month'){
+    const x = monthCache[Number(h.dataset.month)]; if(!x) return;
+    $('#chartTip').textContent = x.label + ' · ' + signed(x.net);
+    $('#chartTip').style.color = x.net >= 0 ? 'var(--viz-in)' : 'var(--viz-out)';
+  }
+  else if(chartMode === 'daily') showDayTip(h.dataset.k, byDay(entriesOf(g.id)));
   else {
     const tip = $('#chartTip');
     tip.textContent = shortDate(new Date(Number(h.dataset.t))) + ' · ' + fmt(Number(h.dataset.v));
@@ -1381,10 +1557,60 @@ $('#chart').addEventListener('pointerdown', e => {
   }
 });
 
+/* one bar per month, last 6 */
+function monthChart(g){
+  const N = 6, W = 336, H = 138, TOP = 10, BASE = 112, slot = W/N, bw = slot - 16;
+  const now = new Date();
+  const months = [];
+  for(let i = N-1; i >= 0; i--){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ y:d.getFullYear(), m:d.getMonth(), label:d.toLocaleDateString('en-US',{month:'short'}), net:0 });
+  }
+  entriesOf(g.id).forEach(e => {
+    const d = new Date(e.ts);
+    const hit = months.find(x => x.y === d.getFullYear() && x.m === d.getMonth());
+    if(hit) hit.net += e.amount;
+  });
+  const up = Math.max(0, ...months.map(x => x.net));
+  const down = Math.max(0, ...months.map(x => -x.net));
+  const zero = down > 0
+    ? Math.round(Math.min(BASE - 26, Math.max(TOP + 26, TOP + (BASE - TOP) * (up / (up + down)))))
+    : BASE;
+  const sUp = up > 0 ? (zero - TOP) / up : 0;
+  const sDown = down > 0 ? (BASE - zero) / down : 0;
+  let out = `<line x1="0" y1="${zero}" x2="${W}" y2="${zero}" stroke="var(--viz-axis)" stroke-width="1"/>`;
+  months.forEach((x,i) => {
+    if(x.net !== 0){
+      const y1 = x.net > 0 ? zero - x.net*sUp : zero + (-x.net)*sDown;
+      out += `<path d="${barPath(i*slot + (slot-bw)/2, bw, zero, y1, 4)}" fill="${x.net > 0 ? 'var(--viz-in)' : 'var(--viz-out)'}"/>`;
+    }
+    const isNow = x.y === now.getFullYear() && x.m === now.getMonth();
+    out += `<text x="${i*slot + slot/2}" y="${H-6}" text-anchor="middle" font-size="10"
+        font-weight="${isNow ? 800 : 500}" fill="${isNow ? 'var(--viz-in)' : 'var(--viz-axis)'}">${x.label}</text>`;
+    out += `<rect class="hit" data-month="${i}" x="${i*slot}" y="0" width="${slot}" height="${BASE+10}" fill="transparent"/>`;
+  });
+  monthCache = months;
+  $('#chartName').textContent = 'Last 6 months';
+  $('#chart').innerHTML = out;
+  const thisMonth = months[months.length-1];
+  $('#chartTip').textContent = thisMonth.label + ' · ' + signed(thisMonth.net);
+  $('#chartTip').style.color = thisMonth.net >= 0 ? 'var(--viz-in)' : 'var(--viz-out)';
+  chartTable(months.map(x => [x.label, signed(x.net)]));
+}
+let monthCache = [];
+
+// same numbers as the chart, for screen readers
+function chartTable(rows){
+  $('#chartTable').querySelector('tbody').innerHTML =
+    rows.map(([k,v]) => `<tr><th scope="row">${esc(k)}</th><td>${esc(v)}</td></tr>`).join('');
+}
+
 function renderCharts(){
   const g = active(); if(!g) return;
   const map = byDay(entriesOf(g.id));
-  if(chartMode === 'daily') dailyChart(map); else totalChart(g, map);
+  if(chartMode === 'daily') dailyChart(map);
+  else if(chartMode === 'month') monthChart(g);
+  else totalChart(g, map);
 }
 
 /* ---- where the money came from ---- */
@@ -1480,6 +1706,7 @@ function render(){
   }
 
   // ---- days screen ----
+  renderMonthOptions(es);
   $('#todayName').textContent = new Date().toLocaleDateString('en-US',{ weekday:'long', month:'short', day:'numeric' });
   const ins = es.filter(e => e.amount > 0);
   $('#histCount').textContent = ins.length
@@ -1497,9 +1724,16 @@ function render(){
   renderCharts();
   renderSourceBars(g);
 
-  const keys = [...map.keys()].sort().reverse();
-  $('#history').innerHTML = keys.length ? keys.map(k => {
-    const day = map.get(k);
+  // the list is filtered and paged: a long history should not rebuild in full
+  const q = filterText.trim().toLowerCase();
+  const shown = es.filter(e =>
+    (!filterMonth || dayKey(e.ts).slice(0,7) === filterMonth) &&
+    (!q || (e.note || '').toLowerCase().includes(q) || (e.source || '').toLowerCase().includes(q)));
+  const shownMap = byDay(shown);
+  const allKeys = [...shownMap.keys()].sort().reverse();
+  const keys = allKeys.slice(0, dayLimit);
+  $('#history').innerHTML = (keys.length ? keys.map(k => {
+    const day = shownMap.get(k);
     const rows = [...day.items].sort((a,b) => b.ts - a.ts).map(e => `
       <div class="item">
         <div class="ic"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-${e.amount > 0 ? 'in' : 'out'}"/></svg></div>
@@ -1513,7 +1747,11 @@ function render(){
       </div>`).join('');
     return `<div class="dayrow"><span>${dayLabel(k)}</span>
         <b class="${day.net < 0 ? 'neg' : ''}">${signed(day.net)}</b></div>${rows}`;
-  }).join('') : `<div class="empty">Nothing here yet.<br>Add every bit of money that comes in.</div>`;
+  }).join('') : `<div class="empty">${q || filterMonth
+      ? 'Nothing matches that.' : 'Nothing here yet.<br>Add every bit of money that comes in.'}</div>`)
+    + (allKeys.length > keys.length
+        ? `<button class="showmore" id="showMore">Show more (${allKeys.length - keys.length} more days)</button>`
+        : '');
 
   paintAmt();
   save();
@@ -1524,8 +1762,9 @@ function renderIncomes(){
     <div class="listrow">
       <div class="ic"><svg class="ic-svg ic-sm" aria-hidden="true"><use href="#i-repeat"/></svg></div>
       <button class="txt" data-income="${i.id}">
-        <div class="t1">${esc(i.label)} · ${fmt(i.amount)}</div>
-        <div class="t2">${i.every === 'week' ? 'Every ' + DOW[i.dow || 0] : 'Monthly on the ' + ordinal(i.dom || 1)}</div>
+        <div class="t1">${esc(i.label)} · ${(i.cur || '$') + i.amount.toLocaleString('en-US')}</div>
+        <div class="t2">${i.every === 'week' ? 'Every ' + DOW[i.dow || 0] : 'Monthly on the ' + ordinal(i.dom || 1)}${
+          (i.cur || '$') !== cur() ? ' · not counted for this goal (' + cur() + ')' : ''}</div>
       </button>
     </div>`).join('') : '<div class="empty">Nothing set up yet.</div>';
 }
@@ -1534,6 +1773,7 @@ function renderIncomes(){
    confetti
    ============================================================ */
 function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const cv = $('#confetti'), ctx = cv.getContext('2d');
   cv.width = innerWidth; cv.height = innerHeight;
   const cols = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4'];
@@ -1561,7 +1801,19 @@ function confetti(){
 applyTheme(); render(); paintSync(); onboardCheck(); startPolling();
 if(session){ sync(); liveConnect(); }
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // tell the user when a newer build is ready instead of leaving them on the old one
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if(!sw) return;
+      sw.addEventListener('statechange', () => {
+        if(sw.state === 'installed' && navigator.serviceWorker.controller){
+          toast('New version ready', () => location.reload());
+          $('#undoBtn').textContent = 'Reload';
+        }
+      });
+    });
+  }).catch(() => {});
 }
 })();
 </script>

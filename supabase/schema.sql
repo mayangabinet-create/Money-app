@@ -37,6 +37,7 @@ create table if not exists public.stash_incomes (
   label      text not null default '' check (char_length(label) <= 40),
   amount     numeric(14,2) not null check (amount > 0),
   every      text not null default 'week' check (every in ('week','month')),
+  currency   text not null default '$' check (char_length(currency) between 1 and 3),
   dow        smallint check (dow between 0 and 6),
   dom        smallint check (dom between 1 and 31),
   active     boolean not null default true,
@@ -44,6 +45,10 @@ create table if not exists public.stash_incomes (
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );
+
+alter table public.stash_incomes
+  add column if not exists currency text not null default '$'
+  check (char_length(currency) between 1 and 3);
 
 -- keep updated_at honest so a stale device cannot overwrite a newer edit
 create or replace function public.stash_touch_updated_at()

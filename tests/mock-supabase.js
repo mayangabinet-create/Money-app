@@ -3,6 +3,8 @@
 //
 //   node tests/mock-supabase.js          # api on :8787, peek/reset on :8788
 const http = require('http');
+let WebSocketServer = null;
+try { ({ WebSocketServer } = require('ws')); } catch { /* realtime checks are skipped without ws */ }
 
 const store = { goals: new Map(), entries: new Map(), incomes: new Map() };
 const TABLES = { stash_goals: 'goals', stash_entries: 'entries', stash_incomes: 'incomes' };
@@ -71,12 +73,45 @@ const peek = http.createServer((req, res) => {
     Object.values(store).forEach(m => m.clear());
     return send(res, 200, { reset: true });
   }
+  if (req.url === '/notify') return send(res, 200, { sent: broadcast(), realtime: !!WebSocketServer });
+  if (req.url === '/sockets') return send(res, 200, { open: sockets.size, realtime: !!WebSocketServer });
   send(res, 200, {
     goals: [...store.goals.values()],
     entries: [...store.entries.values()],
     incomes: [...store.incomes.values()]
   });
 });
+
+// ---- realtime: just enough of the phoenix protocol for the app's client ----
+// join -> phx_reply ok; /notify on the peek port fans a postgres_changes out.
+const sockets = new Set();
+if (WebSocketServer) {
+  const wss = new WebSocketServer({ server: api, path: '/realtime/v1/websocket' });
+  wss.on('connection', sock => {
+    sockets.add(sock);
+    sock.on('close', () => sockets.delete(sock));
+    sock.on('message', raw => {
+      let msg; try { msg = JSON.parse(raw.toString()); } catch { return; }
+      if (msg.event === 'phx_join') {
+        sock.send(JSON.stringify({
+          topic: msg.topic, event: 'phx_reply', ref: msg.ref,
+          payload: { status: 'ok', response: {} }
+        }));
+      }
+      if (msg.event === 'heartbeat') {
+        sock.send(JSON.stringify({ topic: 'phoenix', event: 'phx_reply', ref: msg.ref, payload: { status: 'ok' } }));
+      }
+    });
+  });
+}
+const broadcast = () => {
+  const msg = JSON.stringify({
+    topic: 'realtime:stash', event: 'postgres_changes',
+    payload: { data: { table: 'stash_entries', type: 'INSERT' } }, ref: null
+  });
+  sockets.forEach(s => { try { s.send(msg); } catch {} });
+  return sockets.size;
+};
 
 api.listen(8787, () => console.log('mock supabase api on :8787'));
 peek.listen(8788, () => console.log('mock supabase peek on :8788'));

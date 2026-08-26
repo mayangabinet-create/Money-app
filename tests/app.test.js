@@ -235,6 +235,142 @@ function seed(page, opts = {}) {
   await page.waitForTimeout(1800);
   eq('queued entry syncs on reconnect', (await peek()).entries.length, before + 1);
 
+  // ---------------------------------------------------------------- live updates
+  section('live updates');
+  await page.waitForTimeout(600);
+  const sockets = await fetch(PEEK + '/sockets').then(r => r.json());
+  ok('realtime socket connected', sockets.open >= 1, JSON.stringify(sockets));
+  await page.click('.tab[data-scr="set"]'); await page.waitForTimeout(200);
+  ok('status says live', (await page.textContent('#syncState')).includes('live'),
+     await page.textContent('#syncState'));
+  // a change made elsewhere: push a row straight into the mock, then poke the socket
+  await fetch(MOCK + '/rest/v1/stash_entries', {
+    method: 'POST',
+    headers: { authorization: 'Bearer tok', 'content-type': 'application/json', apikey: 'k' },
+    body: JSON.stringify([{ id: 'remote1', goal_id: 'g1', amount: 55, note: 'From another device',
+                            source: 'Gift', ts: new Date().toISOString() }])
+  });
+  const beforeLive = await page.textContent('#savedTxt');
+  await fetch(PEEK + '/notify');
+  await page.waitForTimeout(1800);
+  const afterLive = await page.textContent('#savedTxt');
+  ok('a remote change arrives without a refresh', afterLive !== beforeLive, `${beforeLive} -> ${afterLive}`);
+
+  // ---------------------------------------------------------------- income currency
+  section('income currency');
+  await page.click('.tab[data-scr="set"]'); await page.waitForTimeout(150);
+  await page.click('#newIncomeBtn'); await page.waitForTimeout(200);
+  await page.fill('#ieLabel', 'Shekel allowance');
+  await page.fill('#ieAmount', '400');
+  await page.selectOption('#ieCur', '₪');
+  await page.click('#ieSave'); await page.waitForTimeout(300);
+  ok('a foreign-currency income is flagged',
+     (await page.locator('#incomeList').innerText()).includes('not counted for this goal'));
+  await page.click('.tab[data-scr="home"]'); await page.waitForTimeout(200);
+  eq('it does not inflate the plan', await page.textContent('#stRate'), '$140');
+
+  // ---------------------------------------------------------------- editing undo
+  section('undoing an edit');
+  await page.click('.tab[data-scr="hist"]'); await page.waitForTimeout(300);
+  const beforeEdit = await page.textContent('#savedTxt');
+  await page.locator('[data-entry]').first().click(); await page.waitForTimeout(250);
+  await page.fill('#eeAmount', '9999');
+  await page.click('#eeSave'); await page.waitForTimeout(300);
+  ok('edit applied', (await page.textContent('#savedTxt')) !== beforeEdit);
+  await page.click('#undoBtn'); await page.waitForTimeout(300);
+  eq('edit undone', await page.textContent('#savedTxt'), beforeEdit);
+
+  // ---------------------------------------------------------------- search, filter, paging
+  section('search and filter');
+  await page.fill('#searchBox', 'tutoring'); await page.waitForTimeout(300);
+  const tutoringRows = await page.locator('[data-entry]').count();
+  ok('search narrows the list', tutoringRows > 0 && tutoringRows < 11, String(tutoringRows));
+  await page.fill('#searchBox', 'zzzz'); await page.waitForTimeout(300);
+  ok('no matches says so', (await page.locator('#history').innerText()).includes('Nothing matches'));
+  await page.fill('#searchBox', ''); await page.waitForTimeout(300);
+  const months = await page.locator('#monthBox option').count();
+  ok('month filter lists the months present', months >= 2, String(months));
+  await page.selectOption('#monthBox', { index: 1 }); await page.waitForTimeout(300);
+  ok('filtering by month keeps entries', (await page.locator('[data-entry]').count()) > 0);
+  await page.selectOption('#monthBox', ''); await page.waitForTimeout(300);
+
+  // ---------------------------------------------------------------- monthly chart
+  section('monthly chart');
+  await page.click('#chartSeg button[data-c="month"]'); await page.waitForTimeout(300);
+  eq('monthly chart named', await page.textContent('#chartName'), 'Last 6 months');
+  eq('six month labels', await page.locator('#chart text').count(), 6);
+  ok('monthly bars drawn', (await page.locator('#chart path').count()) >= 1);
+  ok('chart has a table for screen readers', (await page.locator('#chartTable tr').count()) === 6);
+  await page.locator('#chart .hit').last().click(); await page.waitForTimeout(200);
+  ok('tapping a month reads out its total', (await page.textContent('#chartTip')).includes('$'));
+  await page.click('#chartSeg button[data-c="daily"]'); await page.waitForTimeout(250);
+  eq('daily chart table matches its bars', await page.locator('#chartTable tr').count(), 14);
+
+  // ---------------------------------------------------------------- finished goal summary
+  section('finished goal summary');
+  await page.click('.tab[data-scr="home"]'); await page.waitForTimeout(150);
+  // a second goal first, so finishing this one leaves something active
+  await page.click('#goalPick'); await page.waitForTimeout(250);
+  await page.click('#addGoalFromPicker'); await page.waitForTimeout(250);
+  await page.fill('#geName', 'Laptop'); await page.fill('#geTarget', '3000');
+  await page.click('#geSave'); await page.waitForTimeout(300);
+  await page.click('#goalPick'); await page.waitForTimeout(250);
+  const bikeRow = page.locator('#goalPicker .listrow').filter({ hasText: 'Electric bike' });
+  await bikeRow.locator('[data-edit]').click(); await page.waitForTimeout(250);
+  await page.click('#geComplete'); await page.waitForTimeout(350);
+  await page.click('#goalPick'); await page.waitForTimeout(250);
+  const finished = page.locator('#goalPicker .listrow').filter({ hasText: 'Electric bike' }).locator('[data-goal]');
+  await finished.click(); await page.waitForTimeout(400);
+  ok('summary opens for a finished goal', await page.locator('#goalDone .sheet').isVisible());
+  const gd = await page.locator('#gdStats').innerText();
+  ok('summary shows how long it took', /day/i.test(gd), gd.replace(/\n/g, ' '));
+  ok('summary shows deposits', /Deposits/i.test(gd));
+  await page.click('[data-close="goalDone"]'); await page.waitForTimeout(150);
+  await page.click('[data-close="goalSheet"]'); await page.waitForTimeout(150);
+
+  // ---------------------------------------------------------------- editing across a sync
+  section('editing while a sync lands');
+  await page.click('.tab[data-scr="home"]'); await page.waitForTimeout(150);
+  await page.click('#goalPick'); await page.waitForTimeout(250);
+  await page.locator('#goalPicker .listrow').filter({ hasText: 'Laptop' }).locator('[data-edit]').click();
+  await page.waitForTimeout(250);
+  // a pull replaces every object in db.* while the sheet is open
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.waitForTimeout(1200);
+  await page.fill('#geName', 'Laptop for school');
+  await page.click('#geSave'); await page.waitForTimeout(400);
+  await page.click('#goalPick'); await page.waitForTimeout(250);
+  ok('an edit still applies after a sync pull',
+     (await page.locator('#goalPicker').innerText()).includes('Laptop for school'),
+     (await page.locator('#goalPicker').innerText()).replace(/\n/g, ' | '));
+  await page.click('[data-close="goalSheet"]'); await page.waitForTimeout(150);
+
+  // ---------------------------------------------------------------- backup: merge vs replace
+  section('backup import');
+  const snapshot = await page.evaluate(() => localStorage.getItem('kupa.v1'));
+  const ctx4 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p4 = await ctx4.newPage();
+  p4.on('pageerror', e => errors.push('import: ' + e.message));
+  await p4.goto(APP); await p4.waitForTimeout(300);
+  await p4.fill('#obName', 'Camera'); await p4.fill('#obTarget', '900');
+  await p4.click('#obStartBtn'); await p4.waitForTimeout(300);
+  await p4.click('.tab[data-scr="add"]');
+  await p4.click('.key[data-k="5"]'); await p4.click('.key[data-k="0"]');
+  await p4.click('#addBtn'); await p4.waitForTimeout(250);
+  const ownTotal = await p4.textContent('#savedTxt');
+  await p4.click('.tab[data-scr="set"]'); await p4.waitForTimeout(150);
+  await p4.setInputFiles('#importFile', { name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(snapshot) });
+  await p4.waitForTimeout(400);
+  ok('import asks before doing anything', await p4.locator('#importSheet .sheet').isVisible());
+  ok('import sheet counts both sides', (await p4.textContent('#importSummary')).includes('This device has'));
+  eq('nothing changed yet', await p4.textContent('#savedTxt'), ownTotal);
+  await p4.click('#importMerge'); await p4.waitForTimeout(500);
+  await p4.click('.tab[data-scr="home"]'); await p4.click('#goalPick'); await p4.waitForTimeout(300);
+  const names = await p4.locator('#goalPicker').innerText();
+  ok('merge keeps the local goal', names.includes('Camera'), names.replace(/\n/g, ' | '));
+  ok('merge brings in the backup goals', names.includes('Electric bike'), names.replace(/\n/g, ' | '));
+  await ctx4.close();
+
   // ---------------------------------------------------------------- layout
   section('layout');
   for (const [w, h] of [[390, 844], [320, 568], [430, 932]]) {
